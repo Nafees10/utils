@@ -5,6 +5,7 @@ module utils.lists;
 
 import std.file;
 import std.stdio;
+import utils.misc;
 
 /// Use to manage dynamic arrays that frequently change lengths
 /// 
@@ -177,6 +178,7 @@ private:
 	LinkedItem!(T)* firstItemPtr;
 	LinkedItem!(T)* lastItemPtr;//the pointer of the last item, used for appending new items
 	LinkedItem!(T)* nextReadPtr;//the pointer of the next item to be read
+	LinkedItem!(T)* lastReadPtr;//the pointer to the last item that was read
 
 	uinteger itemCount;//stores the total number of items
 public:
@@ -184,6 +186,7 @@ public:
 		firstItemPtr = null;
 		lastItemPtr = null;
 		nextReadPtr = null;
+		lastReadPtr = null;
 		itemCount = 0;
 	}
 	~this(){
@@ -241,6 +244,34 @@ public:
 			itemCount --;
 		}
 	}
+	///removes the item that was last read using `LinkedList.read`. The last item cannot be removed using this.
+	///returns true on success
+	///
+	///It works by moving contents of next item into the last-read one, and removing the next item
+	bool removeLastRead(){
+		bool r = false;
+		if (lastReadPtr !is null){
+			LinkedItem!(T)* thisItem = lastReadPtr;// the item to delete
+			LinkedItem!(T)* nextItem = (*thisItem).next;// the item after last read
+			// if the last read is last item in list, just delete it
+			if (nextItem !is null){
+				// move contents of next to this item
+				thisItem.data = nextItem.data;
+				// set the pointer to the item after next
+				thisItem.next = nextItem.next;
+				// if nextItem is last item, move last item pointer to thisItem
+				if (nextItem is lastItemPtr){
+					lastItemPtr = thisItem;
+				}
+				// delete nextItem
+				destroy(nextItem);
+				// decrease count
+				itemCount --;
+				r = true;
+			}
+		}
+		return r;
+	}
 	///number of items that the list is holding
 	@property uinteger count(){
 		return itemCount;
@@ -254,10 +285,13 @@ public:
 		T* r;
 		if (nextReadPtr !is null){
 			r = &((*nextReadPtr).data);
+			//mark this item as last read
+			lastReadPtr = nextReadPtr;
 			//move read position
 			nextReadPtr = (*nextReadPtr).next;
 		}else{
 			r = null;
+			lastReadPtr = null;
 		}
 		return r;
 	}
