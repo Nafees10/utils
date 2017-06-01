@@ -71,6 +71,14 @@ T[] insertArray(T)(T[] dat, T[] ins, uinteger pos){
 	return ar1~ins~ar2;
 }
 
+/// Inserts an element into an array, returns the result;
+T[] insertArray(T)(T[] dat, T ins, uinteger pos){
+	T[] ar1, ar2;
+	ar1 = dat[0..pos];
+	ar2 = dat[pos..dat.length];
+	return ar1~ins~ar2;
+}
+
 /// Returns a random number between 0 and `max`, or zero, or `max`
 uinteger getRand(uinteger max){
 	SysTime currTime = Clock.currTime;
