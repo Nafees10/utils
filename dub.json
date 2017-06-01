@@ -1,0 +1,9 @@
+{
+	"name": "utils",
+	"authors": [
+		"Nafees"
+	],
+	"description": "Some misc. functions and classes for D",
+	"copyright": "Copyright © 2017, Nafees",
+	"license": "MIT"
+}
