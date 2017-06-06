@@ -167,6 +167,60 @@ public:
 		return i;
 	}
 }
+
+/// A basic stack
+/// It has a max-size defined in the constructor
+class Stack(T){
+private:
+	T[] list;
+	uinteger pos = 0;
+public:
+	this(uinteger size=512){
+		list = new T[size];
+	}
+	~this(){
+		delete list;
+	}
+	/// Appends an item to the stack
+	void push(T dat){
+		pos ++;
+		list[pos] = dat;
+	}
+	/// Appends an array of items to the stack
+	void push(T[] dat){
+		pos++;
+		list[pos..pos+dat.length] = dat;
+		pos += dat.length-1;
+	}
+	/// Reads and removes an item from the stack
+	T pop(){
+		T r;
+		r = list[pos];
+		pos--;
+		return r;
+	}
+	/// Reads an removes an array of items from the stack
+	T[] pop(uinteger count){
+		T[] r;
+		r.length = count;
+		r[0..count] = list[(pos - count)+1..pos+1];
+		pos -= count;
+		return r;
+	}
+	/// Empties the stack
+	void clear(){
+		pos = 0;
+	}
+	/// the position from which the next item will be read, or added
+	@property uinteger position(){
+		return pos;
+	}
+	/// the position from which the next item will be read, or added
+	@property uinteger position(uinteger newPos){
+		return pos=newPos;
+	}
+}
+
 ///represents an item in a linked list. contains the item, and pointer to the next item's container
 private struct LinkedItem(T){
 	T data;

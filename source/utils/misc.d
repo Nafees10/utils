@@ -55,6 +55,18 @@ void arrayToFile(string fname,string[] array){
 	}
 }
 
+/// Returns true if an aray has an element, false if no
+bool hasElement(T)(T[] array, T element){
+	bool r = false;
+	foreach(cur; array){
+		if (cur == element){
+			r = true;
+			break;
+		}
+	}
+	return r;
+}
+
 /// Removes element(s) from an array, and returns the modified array;
 T[] deleteArray(T)(T[] dat, uinteger pos, uinteger count=1){
 	T[] ar1, ar2;
