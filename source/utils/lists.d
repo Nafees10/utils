@@ -400,6 +400,43 @@ public:
 			return false;
 		}
 	}
+	/// Returns true if list contains a node, i.e searches for a node and returns true if found
+	bool hasElement(T node){
+		bool r = false;
+		T* currentNode = firstItemPtr;
+		while (currentNode !is null){
+			if ((*currentNode).data == node){
+				r = true;
+				break;
+			}
+			// move to next node
+			currentNode = (*currentNode).next;
+		}
+		return r;
+	}
+	/// Returns true if list contains all elements provided in an array
+	/// 
+	/// It will fail if the array contains the same elements at more than one index
+	bool hasElements(T[] nodes){
+		bool r = false;
+		// go through the list and match as many elements as possible
+		T* currentNode = firstItemPtr;
+		while (currentNode !is null){
+			// check if current node matches any in array
+			integer index = nodes.indexOf((*currentNode).data);
+			if (index >= 0){
+				// this node matched, so remove it from the array
+				nodes = nodes.deleteElement(index);
+			}
+			// move to next node
+			currentNode = (*currentNode).next;
+		}
+		// Now check if the nodes array is empty, if yes, then all nodes were matched
+		if (nodes.length == 0){
+			r = true;
+		}
+		return r;
+	}
 }
 
 /// Used in logging widgets. Holds upto certain number of elements, after which older elements are over-written
