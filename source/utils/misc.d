@@ -67,8 +67,23 @@ bool hasElement(T)(T[] array, T element){
 	return r;
 }
 
+/// Returns the index of an element in an array, negative one if not found
+integer indexOf(T)(T[] array, T element){
+	integer i;
+	for (i = 0; i < array.length; i++){
+		if (array[i] == element){
+			break;
+		}
+	}
+	//check if it was not found, and the loop just ended
+	if (i >= array.length || array[i] != element){
+		i = -1;
+	}
+	return i;
+}
+
 /// Removes element(s) from an array, and returns the modified array;
-T[] deleteArray(T)(T[] dat, uinteger pos, uinteger count=1){
+T[] deleteElement(T)(T[] dat, uinteger pos, uinteger count=1){
 	T[] ar1, ar2;
 	ar1 = dat[0..pos];
 	ar2 = dat[pos+count..dat.length];
@@ -76,7 +91,7 @@ T[] deleteArray(T)(T[] dat, uinteger pos, uinteger count=1){
 }
 
 /// Inserts an array into another array, returns the result;
-T[] insertArray(T)(T[] dat, T[] ins, uinteger pos){
+T[] insertElement(T)(T[] dat, T[] ins, uinteger pos){
 	T[] ar1, ar2;
 	ar1 = dat[0..pos];
 	ar2 = dat[pos..dat.length];
