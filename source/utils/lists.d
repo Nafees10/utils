@@ -255,6 +255,23 @@ public:
 		return pos=newPos;
 	}
 }
+/// Unittests for Stack
+unittest{
+	Stack!ubyte stack = new Stack!ubyte;
+	//`Stack.push` and `Stack.pop`
+	stack.push(0);
+	stack.push([1, 2]);
+	assert(stack.pop == 2);
+	assert(stack.pop(2) == [0, 1]);
+	//`Stack.clear`
+	stack.push(0);
+	stack.clear;
+	assert(stack.position == 0);
+	//`Stack.position`
+	stack.push([0, 1, 2]);
+	stack.position = 1;
+	assert(stack.pop == 0);
+}
 
 ///represents an item in a linked list. contains the item, and pointer to the next item's container
 private struct LinkedItem(T){
