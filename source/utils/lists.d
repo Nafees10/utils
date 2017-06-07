@@ -307,7 +307,7 @@ public:
 		if (lastReadPtr !is null){
 			LinkedItem!(T)* thisItem = lastReadPtr;// the item to delete
 			LinkedItem!(T)* nextItem = (*thisItem).next;// the item after last read
-			// if the last read is last item in list, just delete it
+			// make sure that the item to be deleted isn't last
 			if (nextItem !is null){
 				// move contents of next to this item
 				thisItem.data = nextItem.data;
@@ -318,9 +318,16 @@ public:
 					lastItemPtr = thisItem;
 				}
 				// delete nextItem
-				destroy(nextItem);
+				destroy(*nextItem);
 				// decrease count
 				itemCount --;
+				r = true;
+			}else{
+				// if there is only one item, then it can be deleted
+				if (itemCount == 1){
+					// just clearing the list will do the job
+					this.clear();
+				}
 				r = true;
 			}
 		}
