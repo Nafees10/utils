@@ -263,7 +263,7 @@ public:
 			itemCount = 0;
 		}
 	}
-	///adds a new item at the end of the list
+	///adds a new node at the end of the list
 	void append(T item){
 		LinkedItem!(T)* ptr = new LinkedItem!(T);
 		(*ptr).data = item;
@@ -280,7 +280,7 @@ public:
 		//increase item count
 		itemCount ++;
 	}
-	///removes the first item in list
+	///removes the first node in list
 	void removeFirst(){
 		//make sure list is populated
 		if (firstItemPtr !is null){
@@ -298,10 +298,10 @@ public:
 			itemCount --;
 		}
 	}
-	///removes the item that was last read using `LinkedList.read`. The last item cannot be removed using this.
+	///removes the node that was last read using `LinkedList.read`. The last node cannot be removed using this.
 	///returns true on success
 	///
-	///It works by moving contents of next item into the last-read one, and removing the next item
+	///It works by moving contents of next item into the last-read one, and removing the next node
 	bool removeLastRead(){
 		bool r = false;
 		if (lastReadPtr !is null){
@@ -337,11 +337,11 @@ public:
 	@property uinteger count(){
 		return itemCount;
 	}
-	///resets the read position, i.e: set reading position to first item
+	///resets the read position, i.e: set reading position to first node
 	void resetRead(){
 		nextReadPtr = firstItemPtr;
 	}
-	///returns pointer of next item to be read, null if there are no more items
+	///returns pointer of next node to be read, null if there are no more nodes
 	T* read(){
 		T* r;
 		if (nextReadPtr !is null){
@@ -356,9 +356,53 @@ public:
 		}
 		return r;
 	}
+	/// Inserts a node after the position of last-read-node
+	/// Returns true on success, false on failure
+	/// 
+	/// For inserting more than one nodes, use `LinkedList.insertNodes`
+	bool insertNode(T node){
+		//make sure that there was a node that was last-read
+		if (lastReadPtr !is null){
+			LinkedItem!(T)* newNode = new LinkedItem!T;
+			(*newNode).data = node;
+			// make new node point to the current next-to-be-read node
+			(*newNode).next = lastReadPtr.next;
+			// make last read node point to new node
+			(*lastReadPtr).next = newNode;
+
+			return true;
+		}else{
+			return false;
+		}
+	}
+	/// Inserts an array of nodes after the position of last-read-node
+	/// Returns true on success, false on failure
+	bool insertNodes(T[] nodes){
+		if (lastReadPtr !is null && nodes.length > 0){
+			LinkedItem!(T)*[] newNodes;
+			newNodes.length = nodes.length;
+			// put nodes inside the LinkedItem list
+			for (uinteger i = 0; i < nodes.length; i++){
+				newNodes[i] = new LinkedItem!T;
+				(*newNodes[i]).data = nodes[i];
+			}
+			// make all the nodes point to each other in correct order
+			for (uinteger i = 0, end = newNodes.length-1; i < end; i++){
+				(*newNodes[i].next) = newNodes[i+1];
+			}
+			// and make the last node in list point to the node after last-read
+			(*newNodes[newNodes.length-1]).next = (*lastReadPtr).next;
+			// make last read node point to the first new-node
+			(*lastReadPtr).next = newNodes[0];
+
+			return true;
+		}else{
+			return false;
+		}
+	}
 }
 
-/// Used in logging widgets. Holds upto certain number, after which older items are removed
+/// Used in logging widgets. Holds upto certain number of elements, after which older elements are over-written
 class LogList(T){
 private:
 	List!T list;
