@@ -167,6 +167,41 @@ public:
 		return i;
 	}
 }
+/// Unittest for List
+unittest{
+	List!ubyte list = new List!ubyte;
+	//`List.insert` and `List.add` and `List.toArray`
+	list.add(0);
+	list.add(1);
+	list.insert(1, 2);
+	assert(list.toArray() == [0, 2, 1]);
+	//`List.indexOf`
+	assert(list.indexOf(1) == 2);
+	//`List.clear`
+	list.clear;
+	assert(list.length == 0);
+	//`List.loadArray`
+	list.loadArray([0, 1, 2, 3]);
+	assert(list.length == 4);
+	assert(list.indexOf(3) == 3);
+	//`List.addArray`
+	list.addArray([4, 5, 6, 7, 8]);
+	assert(list.length == 9);
+	//`List.set` and `List.read`
+	list.set(0, 1);
+	assert(list.read(0) == 1);
+	//`List.readLast`
+	assert(list.readLast() == 8);
+	assert(list.readLast(2) == [7, 8]);
+	//`List.readRange`
+	assert(list.readRange(0, 2) == [1, 1]);
+	//`List.remove`
+	list.remove(0, 2);
+	assert(list.read(0) == 2);
+	//`List.removeLast`
+	list.removeLast(2);
+	assert(list.readLast() == 6);
+}
 
 /// A basic stack
 /// It has a max-size defined in the constructor
