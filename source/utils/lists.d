@@ -201,6 +201,8 @@ unittest{
 	//`List.removeLast`
 	list.removeLast(2);
 	assert(list.readLast() == 6);
+
+	destroy(list);
 }
 
 /// A basic stack
@@ -271,6 +273,7 @@ unittest{
 	stack.push([0, 1, 2]);
 	stack.position = 1;
 	assert(stack.pop == 0);
+	destroy(stack);
 }
 
 ///represents an item in a linked list. contains the item, and pointer to the next item's container
@@ -456,6 +459,8 @@ public:
 			(*newNode).next = lastReadPtr.next;
 			// make last read node point to new node
 			(*lastReadPtr).next = newNode;
+			//increase count
+			itemCount ++;
 
 			return true;
 		}else{
@@ -481,6 +486,8 @@ public:
 			(*newNodes[newNodes.length-1]).next = (*lastReadPtr).next;
 			// make last read node point to the first new-node
 			(*lastReadPtr).next = newNodes[0];
+			//increase count
+			itemCount += nodes.length;
 
 			return true;
 		}else{
