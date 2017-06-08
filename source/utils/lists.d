@@ -584,7 +584,6 @@ unittest{
 	list.insertNodes([2, 3]);
 	list.resetRead();
 	assert(list.count == 5);
-	write(list.toArray);
 	assert(list.toArray == [0, 1, 2, 3, 4]);
 	//`Linkedlist.hasElement` and `LinkedList.hasElements`
 	assert(list.hasElement(0) == true);
