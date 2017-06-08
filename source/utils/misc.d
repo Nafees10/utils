@@ -161,7 +161,6 @@ T[] arrayReverse(T)(T[] s){
 }
 ///
 unittest{
-	writeln([1, 2, 3, 4].arrayReverse);
 	assert([1, 2, 3, 4].arrayReverse == [4, 3, 2, 1]);
 }
 
