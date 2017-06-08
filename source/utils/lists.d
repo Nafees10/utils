@@ -416,6 +416,14 @@ public:
 			return null;
 		}
 	}
+	/// Returns the pointer to the last node in the list
+	T* readLast(){
+		if (lastItemPtr !is null){
+			return &((*lastItemPtr).data);
+		}else{
+			return null;
+		}
+	}
 	/// Inserts a node after the position of last-read-node
 	/// Returns true on success, false on failure
 	/// 
