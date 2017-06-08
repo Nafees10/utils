@@ -408,6 +408,14 @@ public:
 		}
 		return r;
 	}
+	/// Returns the pointer to the first node in the list
+	T* readFirst(){
+		if (firstItemPtr !is null){
+			return &((*firstItemPtr).data);
+		}else{
+			return null;
+		}
+	}
 	/// Inserts a node after the position of last-read-node
 	/// Returns true on success, false on failure
 	/// 
@@ -434,13 +442,13 @@ public:
 			LinkedItem!(T)*[] newNodes;
 			newNodes.length = nodes.length;
 			// put nodes inside the LinkedItem list
-			for (uinteger i = 0; i < nodes.length; i++){
+			for (uinteger i = 0, lastIndex = nodes.length-1; i < nodes.length; i++){
 				newNodes[i] = new LinkedItem!T;
 				(*newNodes[i]).data = nodes[i];
-			}
-			// make all the nodes point to each other in correct order
-			for (uinteger i = 0, end = newNodes.length-1; i < end; i++){
-				(*newNodes[i].next) = newNodes[i+1];
+				// make them point to next item
+				if (i < lastIndex){
+					(*newNodes[i]).next = newNodes[i + 1];
+				}
 			}
 			// and make the last node in list point to the node after last-read
 			(*newNodes[newNodes.length-1]).next = (*lastReadPtr).next;
@@ -455,7 +463,7 @@ public:
 	/// Returns true if list contains a node, i.e searches for a node and returns true if found
 	bool hasElement(T node){
 		bool r = false;
-		T* currentNode = firstItemPtr;
+		LinkedItem!(T)* currentNode = firstItemPtr;
 		while (currentNode !is null){
 			if ((*currentNode).data == node){
 				r = true;
@@ -472,7 +480,7 @@ public:
 	bool hasElements(T[] nodes){
 		bool r = false;
 		// go through the list and match as many elements as possible
-		T* currentNode = firstItemPtr;
+		LinkedItem!(T)* currentNode = firstItemPtr;
 		while (currentNode !is null){
 			// check if current node matches any in array
 			integer index = nodes.indexOf((*currentNode).data);
