@@ -536,6 +536,65 @@ public:
 		return r;
 	}
 }
+/// Unittests for `utils.lists.LinkedList`
+unittest{
+	LinkedList!ubyte list = new LinkedList!ubyte;
+	//`LinkedList.append` and `LinkedList.read` and `LinkedList.readFirst` and `LinkedList.readLast` and `LinkedList.resetRead`
+	list.append(0);
+	list.append(1);
+	list.append(2);
+	assert(*(list.readFirst()) == 0);
+	assert(*(list.readLast()) == 2);
+	assert(list.count == 3);
+	list.read();// to skip, we wanna read the node at index 1 (2nd node)
+	assert(*(list.read()) == 1);
+	list.resetRead();
+	assert(*(list.read()) == 0);
+	//`LinkedList.clear`
+	list.clear();
+	list.append(3);
+	list.append(4);
+	assert(*(list.read()) == 3);
+	assert(list.count == 2);
+	list.clear();
+	//`LinkedList.removeLastRead` and `Linkedlist.removeFirst`
+	list.append(0);
+	list.append(1);
+	list.append(2);
+	list.read();
+	list.read();
+	list.removeLastRead();
+	list.resetRead();
+	assert(*(list.read()) == 0);
+	assert(*(list.read()) == 2);
+	assert(list.count == 2);
+	list.removeFirst();
+	list.resetRead();
+	assert(*(list.read()) == 2);
+	assert(list.count == 1);
+	list.removeLastRead();
+	assert(list.count == 0);
+	//`LinkedList.toArray` and `LinkedList.insertNode` and `LinkedList.insertNodes`
+	list.clear();// to reset stuff
+	list.append(0);
+	list.append(4);
+	list.read();
+	list.insertNode(1);
+	assert(*(list.read()) == 1);
+	list.insertNodes([2, 3]);
+	list.resetRead();
+	assert(list.count == 5);
+	write(list.toArray);
+	assert(list.toArray == [0, 1, 2, 3, 4]);
+	//`Linkedlist.hasElement` and `LinkedList.hasElements`
+	assert(list.hasElement(0) == true);
+	assert(list.hasElement(4) == true);
+	assert(list.hasElement(5) == false);
+	assert(list.hasElement(7) == false);
+	assert(list.hasElements([3, 1, 2, 0, 4]) == true);
+	assert(list.hasElements([0, 1, 2, 6]) == false);
+	destroy(list);
+}
 
 /// Used in logging widgets. Holds upto certain number of elements, after which older elements are over-written
 class LogList(T){
