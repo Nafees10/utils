@@ -66,6 +66,11 @@ bool hasElement(T)(T[] array, T element){
 	}
 	return r;
 }
+///
+unittest{
+	assert([0, 1, 2].hasElement(2) == true);
+	assert([0, 1, 2].hasElement(4) == false);
+}
 
 /// Returns the index of an element in an array, negative one if not found
 integer indexOf(T)(T[] array, T element){
@@ -81,6 +86,11 @@ integer indexOf(T)(T[] array, T element){
 	}
 	return i;
 }
+///
+unittest{
+	assert([0, 1, 2].indexOf(1) == 1);
+	assert([0, 1, 2].indexOf(4) == -1);
+}
 
 /// Removes element(s) from an array, and returns the modified array;
 T[] deleteElement(T)(T[] dat, uinteger pos, uinteger count=1){
@@ -88,6 +98,11 @@ T[] deleteElement(T)(T[] dat, uinteger pos, uinteger count=1){
 	ar1 = dat[0..pos];
 	ar2 = dat[pos+count..dat.length];
 	return ar1~ar2;
+}
+///
+unittest{
+	assert([0, 1, 2].deleteElement(1) == [0, 2]);
+	assert([0, 1, 2].deleteElement(0, 2) == [2]);
 }
 
 /// Inserts an array into another array, returns the result;
@@ -97,13 +112,22 @@ T[] insertElement(T)(T[] dat, T[] ins, uinteger pos){
 	ar2 = dat[pos..dat.length];
 	return ar1~ins~ar2;
 }
-
-/// Inserts an element into an array, returns the result;
-T[] insertArray(T)(T[] dat, T ins, uinteger pos){
+///
+unittest{
+	assert([0, 2].insertElement([1, 1], 1) == [0, 1, 1, 2]);
+	assert([2].insertElement([0, 1], 0) == [0, 1, 2]);
+}
+/// Inserts an element into an array
+T[] insertElement(T)(T[] dat, T ins, uinteger pos){
 	T[] ar1, ar2;
 	ar1 = dat[0..pos];
 	ar2 = dat[pos..dat.length];
-	return ar1~ins~ar2;
+	return ar1~[ins]~ar2;
+}
+///
+unittest{
+	assert([0, 2].insertElement(1, 1) == [0, 1, 2]);
+	assert([2].insertElement(1, 0) == [1, 2]);
 }
 
 /// Returns a random number between 0 and `max`, or zero, or `max`
@@ -123,19 +147,22 @@ uinteger getRand(uinteger max){
 	return r;
 }
 
-/// returns the reverse of a string
-string reverse(string s){
+/// returns the reverse of an array
+T[] arrayReverse(T)(T[] s){
 	integer i, writePos = 0;
-	char[] r;
+	T[] r;
 	r.length = s.length;
 
-	i = s.length-1;
-	do{
+	for (i = s.length-1; writePos < r.length; i--){
 		r[writePos] = s[i];
 		writePos ++;
-		i --;
-	}while(i > 0);
-	return cast(string)r;
+	}
+	return r;
+}
+///
+unittest{
+	writeln([1, 2, 3, 4].arrayReverse);
+	assert([1, 2, 3, 4].arrayReverse == [4, 3, 2, 1]);
 }
 
 /// Returns a string with all uppercase alphabets converted into lowercase
@@ -154,6 +181,10 @@ string lowercase(string s){
 	
 	return tmstr;
 }
+///
+unittest{
+	assert("ABcD".lowercase == "abcd");
+}
 
 /// returns true if all characters in a string are alphabets, uppercase, lowercase, or both
 bool isAlphabet(string s){
@@ -166,4 +197,9 @@ bool isAlphabet(string s){
 		if (chCode<97 || chCode>122){r=false;break;}
 	}
 	return r;
+}
+///
+unittest{
+	assert("aBcDEf".isAlphabet == true);
+	assert("ABCd_".isAlphabet == false);
 }
