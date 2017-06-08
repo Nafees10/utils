@@ -312,6 +312,7 @@ public:
 			firstItemPtr = null;
 			lastItemPtr = null;
 			nextReadPtr = null;
+			lastReadPtr = null;
 			itemCount = 0;
 		}
 	}
@@ -343,6 +344,10 @@ public:
 			//if nextReadPtr is firstItemPtr, move it to next as well
 			if (nextReadPtr is first){
 				nextReadPtr = firstItemPtr;
+			}
+			// if the last-read is pointing to first item, null it
+			if (lastReadPtr is first){
+				lastItemPtr = null;
 			}
 			//free memory occupied by first
 			destroy(*first);
