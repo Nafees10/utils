@@ -459,6 +459,8 @@ public:
 			(*newNode).next = lastReadPtr.next;
 			// make last read node point to new node
 			(*lastReadPtr).next = newNode;
+			// make next read point to this node now
+			nextReadPtr = newNode;
 			//increase count
 			itemCount ++;
 
@@ -474,18 +476,20 @@ public:
 			LinkedItem!(T)*[] newNodes;
 			newNodes.length = nodes.length;
 			// put nodes inside the LinkedItem list
-			for (uinteger i = 0, lastIndex = nodes.length-1; i < nodes.length; i++){
+			for (uinteger i = 0; i < nodes.length; i++){
 				newNodes[i] = new LinkedItem!T;
 				(*newNodes[i]).data = nodes[i];
-				// make them point to next item
-				if (i < lastIndex){
-					(*newNodes[i]).next = newNodes[i + 1];
-				}
+			}
+			// make them point to their next node
+			for (uinteger i = 0, end = newNodes.length-1; i < end; i ++){
+				(*newNodes[i]).next = newNodes[i+1];
 			}
 			// and make the last node in list point to the node after last-read
 			(*newNodes[newNodes.length-1]).next = (*lastReadPtr).next;
 			// make last read node point to the first new-node
 			(*lastReadPtr).next = newNodes[0];
+			//make next read point to this
+			nextReadPtr = newNodes[0];
 			//increase count
 			itemCount += nodes.length;
 
