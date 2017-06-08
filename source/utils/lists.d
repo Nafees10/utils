@@ -424,6 +424,20 @@ public:
 			return null;
 		}
 	}
+	/// Reads the list into an array, and returns the array
+	T[] toArray(){
+		LinkedItem!(T)* currentNode = firstItemPtr;
+		uinteger i = 0;
+		T[] r;
+		r.length = itemCount;
+		while (currentNode !is null){
+			r[i] = (*currentNode).data;
+			// move to next node
+			currentNode = (*currentNode).next;
+			i ++;
+		}
+		return r;
+	}
 	/// Inserts a node after the position of last-read-node
 	/// Returns true on success, false on failure
 	/// 
