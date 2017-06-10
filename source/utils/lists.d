@@ -379,8 +379,7 @@ public:
 				}
 				// delete nextItem
 				destroy(*nextItem);
-				// decrease count
-				itemCount --;
+
 				r = true;
 			}else{
 				// if there is only one item, or the pointer to second-last item is available, then it can be deleted
@@ -401,8 +400,6 @@ public:
 						// destroy last one
 						destroy(*lastItemPtr);
 						lastItemPtr = item;
-						//decrease count
-						itemCount--;
 
 						r = true;
 					}/*else{
@@ -411,6 +408,13 @@ public:
 
 				}
 			}
+		}
+		//decrease count
+		if (r){
+			itemCount --;
+			//since the last-read has been removed, null that pointer, to prevent segFault
+			lastReadPtr = null;
+
 		}
 		return r;
 	}
