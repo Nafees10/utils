@@ -285,7 +285,6 @@ private struct LinkedItem(T){
 class LinkedList(T){
 private:
 	LinkedItem!(T)* firstItemPtr;
-	LinkedItem!(T)* secondLastItemPtr;
 	LinkedItem!(T)* lastItemPtr;//the pointer of the last item, used for appending new items
 	LinkedItem!(T)* nextReadPtr;//the pointer of the next item to be read
 	LinkedItem!(T)* lastReadPtr;//the pointer to the last item that was read
@@ -294,7 +293,6 @@ private:
 public:
 	this(){
 		firstItemPtr = null;
-		secondLastItemPtr = null;
 		lastItemPtr = null;
 		nextReadPtr = null;
 		lastReadPtr = null;
@@ -315,7 +313,6 @@ public:
 			}
 			//reset all variables
 			firstItemPtr = null;
-			secondLastItemPtr = null;
 			lastItemPtr = null;
 			nextReadPtr = null;
 			lastReadPtr = null;
@@ -334,8 +331,6 @@ public:
 		}else{
 			(*lastItemPtr).next = ptr;
 		}
-		//mark the current lastItemPtr as secondLastitemPtr
-		secondLastItemPtr = lastItemPtr;
 		//mark this item as last
 		lastItemPtr = ptr;
 		//increase item count
@@ -347,10 +342,6 @@ public:
 		if (firstItemPtr !is null){
 			LinkedItem!(T)* first;
 			first = firstItemPtr;
-			//if the first item is second-last, null second-last
-			if (secondLastItemPtr == first){
-				secondLastItemPtr = null;
-			}
 			//mark the second item as first, if there isn't a second item, it'll automatically be marked null
 			firstItemPtr = (*firstItemPtr).next;
 			//if nextReadPtr is firstItemPtr, move it to next as well
@@ -397,13 +388,27 @@ public:
 					// just clearing the list will do the job
 					this.clear();
 					r = true;
-				}else if (secondLastItemPtr !is null){
-					(*secondLastItemPtr).next = null;
-					//destroy last item
-					destroy(*lastItemPtr);
-					// decrease count
-					itemCount --;
-					r = true;
+				}else{
+					//we'll have to read till second-last item to get be able to remove the last item
+					LinkedItem!(T)* item = firstItemPtr;
+					for (uinteger i = 0, end = itemCount-2; i < end; i ++){
+						item = item.next;
+					}
+					// now `item` is pointing to second last item, make sure this is true
+					if (item.next == lastItemPtr){
+						//make the list end here
+						item.next = null;
+						// destroy last one
+						destroy(*lastItemPtr);
+						lastItemPtr = item;
+						//decrease count
+						itemCount--;
+
+						r = true;
+					}/*else{
+						something that shouldn't have gone wrong went wrong with `linkedList.itemCount`
+					}*/
+
 				}
 			}
 		}
@@ -482,12 +487,6 @@ public:
 			//increase count
 			itemCount ++;
 
-			//check if this is the second last item
-			if ((*newNode).next !is null && (*newNode).next.next == null){
-				// this is the second last item
-				secondLastItemPtr = newNode;
-			}
-
 			return true;
 		}else{
 			return false;
@@ -516,13 +515,6 @@ public:
 			nextReadPtr = newNodes[0];
 			//increase count
 			itemCount += nodes.length;
-
-			//check if the lsat inserted node is the second last node
-			LinkedItem!(T)* lastInsert = newNodes[newNodes.length-1];
-			if ((*lastInsert).next !is null && (*lastInsert).next.next == null){
-				// this is the second last item
-				secondLastItemPtr = lastInsert;
-			}
 
 			return true;
 		}else{
