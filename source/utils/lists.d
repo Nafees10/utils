@@ -386,6 +386,8 @@ public:
 				if (itemCount == 1){
 					// just clearing the list will do the job
 					this.clear();
+					// but we must increase the item count because at the end, it will be deceased by one
+					itemCount ++;// a workaround...
 					r = true;
 				}else{
 					//we'll have to read till second-last item to get be able to remove the last item
