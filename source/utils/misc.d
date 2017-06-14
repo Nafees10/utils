@@ -130,23 +130,6 @@ unittest{
 	assert([2].insertElement(1, 0) == [1, 2]);
 }
 
-/// Returns a random number between 0 and `max`, or zero, or `max`
-uinteger getRand(uinteger max){
-	SysTime currTime = Clock.currTime;
-	uinteger tm = currTime.second+(currTime.minute*60)+(currTime.hour*60*60);// stores time in seconds
-	uinteger r;
-	if (max>0){
-		if (tm>max){
-			r = tm % max;
-		}else{
-			r = tm;
-		}
-	}else{
-		r = 0;
-	}
-	return r;
-}
-
 /// returns the reverse of an array
 T[] arrayReverse(T)(T[] s){
 	integer i, writePos = 0;
