@@ -6,7 +6,6 @@ module utils.misc;
 import std.stdio;
 import std.datetime;
 
-//These names are easier to understand
 ///`integer is a `long` on 64 bit systems, and `int` on 32 bit systems
 alias integer = ptrdiff_t;
 ///`uinteger` is a `ulong` on 64 bit systems, and `uint` on 32 bit systems
