@@ -205,56 +205,55 @@ unittest{
 	destroy(list);
 }
 
-/// A basic stack
-/// It has a max-size defined in the constructor
+/// A basic stack with push, and pop
 class Stack(T){
 private:
-	T[] list;
-	uinteger pos = 0;
+	LinkedList!T list;
 public:
-	this(uinteger size=512){
-		list = new T[size];
+	this(){
+		list = new LinkedList!T;
 	}
 	~this(){
-		delete list;
+		list.destroy;
 	}
 	/// Appends an item to the stack
-	void push(T dat){
-		pos ++;
-		list[pos] = dat;
+	void push(T item){
+		list.resetRead();// to make insert happen at beginning
+		list.insert(item);
 	}
 	/// Appends an array of items to the stack
-	void push(T[] dat){
-		pos++;
-		list[pos..pos+dat.length] = dat;
-		pos += dat.length-1;
+	void push(T[] items){
+		list.resetRead();// to make insert happen at beginning
+		list.insert(items);
 	}
-	/// Reads and removes an item from the stack
+	/// Reads and removes an item from the stack, if no more items are present, throws Exception
 	T pop(){
-		T r;
-		r = list[pos];
-		pos--;
-		return r;
+		T* ptr = list.readFirst();
+		if (ptr is null){
+			throw new Exception("No more items left to read on stack");
+		}else{
+			list.removeFirst();
+			return *ptr;
+		}
 	}
-	/// Reads an removes an array of items from the stack
+	/// Reads and removes an array of items from the stack,
+	/// if not enough items are left, throws Exception
 	T[] pop(uinteger count){
-		T[] r;
-		r.length = count;
-		r[0..count] = list[(pos - count)+1..pos+1];
-		pos -= count;
-		return r;
+		//make sure there are enough items
+		if (list.count >= count){
+			T[] r;
+			for (uinteger i = 0; i < count; i ++){
+				r[i] = *list.readFirst();// TODO: it can cause a segfault in case list.itemCount is out of sync, which should not happen
+				list.removeFirst;
+			}
+			return r;
+		}else{
+			throw new Exception("Not enough items in stack");
+		}
 	}
 	/// Empties the stack
 	void clear(){
-		pos = 0;
-	}
-	/// the position from which the next item will be read, or added
-	@property uinteger position(){
-		return pos;
-	}
-	/// the position from which the next item will be read, or added
-	@property uinteger position(uinteger newPos){
-		return pos=newPos;
+		list.clear;
 	}
 }
 /// Unittests for Stack
@@ -263,17 +262,12 @@ unittest{
 	//`Stack.push` and `Stack.pop`
 	stack.push(0);
 	stack.push([1, 2]);
+	writeln(stack.pop);
 	assert(stack.pop == 2);
 	assert(stack.pop(2) == [0, 1]);
 	//`Stack.clear`
 	stack.push(0);
 	stack.clear;
-	assert(stack.position == 0);
-	//`Stack.position`
-	stack.push([0, 1, 2]);
-	stack.position = 1;
-	assert(stack.pop == 0);
-	destroy(stack);
 }
 
 ///represents an item in a linked list. contains the item, and pointer to the next item's container
@@ -451,9 +445,10 @@ public:
 	@property uinteger count(){
 		return itemCount;
 	}
-	///resets the read position, i.e: set reading position to first node
+	///resets the read position, i.e: set reading position to first node, and nulls the last-read-ptr
 	void resetRead(){
 		nextReadPtr = firstItemPtr;
+		lastReadPtr = null;
 	}
 	///returns pointer of next node to be read, null if there are no more nodes
 	T* read(){
