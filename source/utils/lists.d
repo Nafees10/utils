@@ -336,6 +336,33 @@ public:
 		//increase item count
 		itemCount ++;
 	}
+	///adds new nodes at end of list from an array
+	void append(T[] items){
+		LinkedItem!(T)*[] newNodes;
+		newNodes.length = items.length;
+		// put nodes inside the LinkedItem list
+		for (uinteger i = 0; i < items.length; i++){
+			newNodes[i] = new LinkedItem!T;
+			(*newNodes[i]).data = items[i];
+		}
+		// make them point to their next node
+		for (uinteger i = 0, end = newNodes.length-1; i < end; i ++){
+			(*newNodes[i]).next = newNodes[i+1];
+		}
+		// make last item from newNodes point to null
+		(*newNodes[newNodes.length-1]).next = null;
+		// make the last item point to first item in newNodes
+		if (firstItemPtr is null){
+			firstItemPtr = newNodes[0];
+			nextReadPtr = newNodes[0];
+		}else{
+			(*lastItemPtr).next = newNodes[0];
+		}
+		// mark the last item in newNodes as last in list
+		lastItemPtr = newNodes[newNodes.length-1];
+		//increase count
+		itemCount += newNodes.length;
+	}
 	///removes the first node in list
 	void removeFirst(){
 		//make sure list is populated
@@ -579,6 +606,17 @@ unittest{
 	assert(*(list.read()) == 1);
 	list.resetRead();
 	assert(*(list.read()) == 0);
+	// `LinkedList.append(T[])`:
+	list.clear();
+	list.append(0);
+	list.append([1, 2, 3]);
+	assert(list.count == 4);
+	assert(list.toArray ==[0, 1, 2, 3]);
+	list.clear;
+	list.append([0, 1, 2]);
+	list.append(3);
+	assert(list.count == 4);
+	assert(list.toArray == [0, 1, 2, 3]);
 	//`LinkedList.clear`
 	list.clear();
 	list.append(3);
