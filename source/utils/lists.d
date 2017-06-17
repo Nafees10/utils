@@ -208,44 +208,80 @@ unittest{
 /// A basic stack with push, and pop
 class Stack(T){
 private:
-	LinkedList!T list;
+	struct stackItem(T){
+		T data; /// the data this item holds
+		stackItem* prev; /// pointer to previous stackItem
+	}
+	stackItem!(T)* lastItemPtr;
+	uinteger itemCount;
 public:
 	this(){
-		list = new LinkedList!T;
+		lastItemPtr = null;
+		itemCount = 0;
 	}
 	~this(){
-		list.destroy;
+		clear;
 	}
 	/// Appends an item to the stack
 	void push(T item){
-		list.resetRead();// to make insert happen at beginning
-		list.insert(item);
+		stackItem!(T)* newItem = new stackItem!T;
+		(*newItem).data = item;
+		(*newItem).prev = lastItemPtr;
+		lastItemPtr = newItem;
+		//increase count
+		itemCount ++;
 	}
 	/// Appends an array of items to the stack
 	void push(T[] items){
-		list.resetRead();// to make insert happen at beginning
-		list.insert(items);
+		// put them all in stackItem[]
+		stackItem!(T)*[] newItems;
+		newItems.length = items.length;
+		for (uinteger i = 0; i < items.length; i ++){
+			newItems[i] = new stackItem!T;
+			(*newItems[i]).data = items[i];
+		}
+		// make them all point to their previous item, except for the first one, which should point to `lastItemPtr`
+		for (uinteger i = newItems.length - 1; i > 0; i --){
+			(*newItems[i]).prev = newItems[i-1];
+		}
+		(*newItems[0]).prev = lastItemPtr;
+		lastItemPtr = newItems[newItems.length - 1];
+		//increase count
+		itemCount += newItems.length;
 	}
 	/// Reads and removes an item from the stack, if no more items are present, throws Exception
 	T pop(){
-		T* ptr = list.readFirst();
-		if (ptr is null){
-			throw new Exception("No more items left to read on stack");
+		// make sure its not null
+		if (lastItemPtr !is null){
+			T r = (*lastItemPtr).data;
+			// delete it from stack
+			stackItem!(T)* prevItem = (*lastItemPtr).prev;
+			destroy(*lastItemPtr);
+			lastItemPtr = prevItem;
+			//decrease count
+			itemCount --;
+			return r;
 		}else{
-			list.removeFirst();
-			return *ptr;
+			throw new Exception("Cannot pop from empty stack");
 		}
 	}
 	/// Reads and removes an array of items from the stack,
 	/// if not enough items are left, throws Exception
 	T[] pop(uinteger count){
 		//make sure there are enough items
-		if (list.count >= count){
+		if (itemCount >= count){
 			T[] r;
+			r.length = count;
+			stackItem!(T)* ptr = lastItemPtr;
 			for (uinteger i = 0; i < count; i ++){
-				r[i] = *list.readFirst();// TODO: it can cause a segfault in case list.itemCount is out of sync, which should not happen
-				list.removeFirst;
+				r[i] = (*ptr).data;
+				ptr = (*ptr).prev;
+				//delete it
+				destroy(*lastItemPtr);
+				lastItemPtr = ptr;
 			}
+			//decrease count
+			itemCount -= r.length;
 			return r;
 		}else{
 			throw new Exception("Not enough items in stack");
@@ -253,7 +289,20 @@ public:
 	}
 	/// Empties the stack
 	void clear(){
-		list.clear;
+		// go through all items and delete em
+		stackItem!(T)* ptr;
+		ptr = lastItemPtr;
+		while (ptr !is null){
+			stackItem!(T)* prevPtr = (*ptr).prev;
+			destroy(*ptr);
+			ptr = prevPtr;
+		}
+		lastItemPtr = null;
+		itemCount = 0;
+	}
+	/// Number of items in stack
+	@property uinteger count(){
+		return itemCount;
 	}
 }
 /// Unittests for Stack
@@ -262,22 +311,24 @@ unittest{
 	//`Stack.push` and `Stack.pop`
 	stack.push(0);
 	stack.push([1, 2]);
-	writeln(stack.pop);
 	assert(stack.pop == 2);
-	assert(stack.pop(2) == [0, 1]);
-	//`Stack.clear`
+	assert(stack.pop(2) == [1, 0]);
+	//`Stack.clear` && `Stack.count`
 	stack.push(0);
+	assert(stack.count == 1);
 	stack.clear;
+	assert(stack.count == 0);
+	stack.destroy;
 }
 
-///represents an item in a linked list. contains the item, and pointer to the next item's container
-private struct LinkedItem(T){
-	T data;
-	LinkedItem!(T)* next = null;//mark it null to show the list has ended
-}
 /// A linked list, used where only reading in the forward direction is required
 class LinkedList(T){
 private:
+	///represents an item in a linked list. contains the item, and pointer to the next item's container
+	struct LinkedItem(T){
+		T data;
+		LinkedItem!(T)* next = null;//mark it null to show the list has ended
+	}
 	LinkedItem!(T)* firstItemPtr;
 	LinkedItem!(T)* lastItemPtr;//the pointer of the last item, used for appending new items
 	LinkedItem!(T)* nextReadPtr;//the pointer of the next item to be read
