@@ -503,32 +503,34 @@ public:
 		return r;
 	}
 	/// Inserts a node after the position of last-read-node
-	/// Returns true on success, false on failure
+	/// To insert at beginning, call `resetRead` before inserting
 	/// 
 	/// For inserting more than one nodes, use `LinkedList.insertNodes`
-	bool insertNode(T node){
-		//make sure that there was a node that was last-read
+	void insert(T node){
+		LinkedItem!(T)* newNode = new LinkedItem!T;
+		(*newNode).data = node;
+		// check if has to insert at beginning or at after last-read
 		if (lastReadPtr !is null){
-			LinkedItem!(T)* newNode = new LinkedItem!T;
-			(*newNode).data = node;
 			// make new node point to the current next-to-be-read node
 			(*newNode).next = lastReadPtr.next;
 			// make last read node point to new node
 			(*lastReadPtr).next = newNode;
-			// make next read point to this node now
-			nextReadPtr = newNode;
-			//increase count
-			itemCount ++;
-
-			return true;
 		}else{
-			return false;
+			// make this item point to first-item
+			(*newNode).next = firstItemPtr;
+			// mark this as first item
+			firstItemPtr = newNode;
 		}
+		// make next read point to this node now
+		nextReadPtr = newNode;
+		//increase count
+		itemCount ++;
 	}
 	/// Inserts an array of nodes after the position of last-read-node
+	/// If there is no last-read-item, the item is inserted at beginning. To do this, call `resetRead` before inserting
 	/// Returns true on success, false on failure
-	bool insertNodes(T[] nodes){
-		if (lastReadPtr !is null && nodes.length > 0){
+	void insert(T[] nodes){
+		if (nodes.length > 0){
 			LinkedItem!(T)*[] newNodes;
 			newNodes.length = nodes.length;
 			// put nodes inside the LinkedItem list
@@ -540,18 +542,22 @@ public:
 			for (uinteger i = 0, end = newNodes.length-1; i < end; i ++){
 				(*newNodes[i]).next = newNodes[i+1];
 			}
-			// and make the last node in list point to the node after last-read
-			(*newNodes[newNodes.length-1]).next = (*lastReadPtr).next;
-			// make last read node point to the first new-node
-			(*lastReadPtr).next = newNodes[0];
+			// check if has to insert at beginning or at after last-read
+			if (lastReadPtr !is null && nodes.length > 0){
+				// and make the last node in list point to the node after last-read
+				(*newNodes[newNodes.length-1]).next = (*lastReadPtr).next;
+				// make last read node point to the first new-node
+				(*lastReadPtr).next = newNodes[0];
+			}else{
+				// insert at beginning
+				(*newNodes[newNodes.length-1]).next = firstItemPtr;
+				// make this the first node
+				firstItemPtr = newNodes[0];
+			}
 			//make next read point to this
 			nextReadPtr = newNodes[0];
 			//increase count
 			itemCount += nodes.length;
-
-			return true;
-		}else{
-			return false;
 		}
 	}
 	/// Returns true if list contains a node, i.e searches for a node and returns true if found
@@ -646,9 +652,9 @@ unittest{
 	list.append(0);
 	list.append(4);
 	list.read();
-	list.insertNode(1);
+	list.insert(1);
 	assert(*(list.read()) == 1);
-	list.insertNodes([2, 3]);
+	list.insert([2, 3]);
 	list.resetRead();
 	assert(list.count == 5);
 	assert(list.toArray == [0, 1, 2, 3, 4]);
@@ -659,6 +665,12 @@ unittest{
 	assert(list.hasElement(7) == false);
 	assert(list.hasElements([3, 1, 2, 0, 4]) == true);
 	assert(list.hasElements([0, 1, 2, 6]) == false);
+	// `LinkedList.insert` at beginning
+	list.clear;
+	list.insert([1, 2]);
+	list.insert(0);
+	assert(list.count == 3);
+	assert(list.toArray == [0, 1, 2]);
 	//destroying last item
 	list.clear();
 	list.append(0);
