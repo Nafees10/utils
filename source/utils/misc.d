@@ -131,7 +131,7 @@ unittest{
 }
 
 /// returns the reverse of an array
-T[] arrayReverse(T)(T[] s){
+T[] reverseArray(T)(T[] s){
 	integer i, writePos = 0;
 	T[] r;
 	r.length = s.length;
@@ -144,7 +144,7 @@ T[] arrayReverse(T)(T[] s){
 }
 ///
 unittest{
-	assert([1, 2, 3, 4].arrayReverse == [4, 3, 2, 1]);
+	assert([1, 2, 3, 4].reverseArray == [4, 3, 2, 1]);
 }
 
 /// Returns a string with all uppercase alphabets converted into lowercase
