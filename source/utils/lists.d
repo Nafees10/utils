@@ -625,6 +625,7 @@ public:
 	/// It will fail if the array contains the same elements at more than one index
 	bool hasElements(T[] nodes){
 		bool r = false;
+		nodes = nodes.dup;
 		// go through the list and match as many elements as possible
 		LinkedItem!(T)* currentNode = firstItemPtr;
 		while (currentNode !is null){
