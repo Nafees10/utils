@@ -70,6 +70,28 @@ unittest{
 	assert([0, 1, 2].hasElement(2) == true);
 	assert([0, 1, 2].hasElement(4) == false);
 }
+/// Returns true if array contains all elements provided in an array, else, false
+bool hasElements(T)(T[] array, T[] elements){
+	bool r = true;
+	elements = elements.dup;
+	// go through the list and match as many elements as possible
+	for (uinteger i = 0; i < elements.length; i ++){
+		// check if it exists in array
+		uinteger index = array.indexOf(elements[i]);
+		if (index == -1){
+			r = false;
+			break;
+		}
+	}
+	return r;
+}
+///
+unittest{
+	assert([0, 1, 2].hasElements([2, 0, 1]) == true);
+	assert([0, 1, 2].hasElements([2, 0, 1, 1, 0, 2]) == true); // it works different-ly from `LinkedList.hasElements`
+	assert([0, 1, 2].hasElements([1, 2]) == true);
+	assert([0, 1, 2].hasElements([2, 4]) == false);
+}
 
 /// Returns the index of an element in an array, negative one if not found
 integer indexOf(T)(T[] array, T element){
