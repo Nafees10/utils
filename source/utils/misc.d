@@ -175,10 +175,11 @@ unittest{
 string lowercase(string s){
 	string tmstr;
 	ubyte tmbt;
+	ubyte diff = 'a' - 'A';
 	for (integer i=0;i<s.length;i++){
 		tmbt = cast(ubyte) s[i];
-		if (tmbt>=65 && tmbt<=90){
-			tmbt+=32;
+		if (tmbt>='A' && tmbt<='Z'){
+			tmbt += diff;
 			tmstr ~= cast(char) tmbt;
 		}else{
 			tmstr ~= s[i];
@@ -190,17 +191,18 @@ string lowercase(string s){
 ///
 unittest{
 	assert("ABcD".lowercase == "abcd");
+	assert("abYZ".lowercase == "abyz");
 }
 
 /// returns true if all characters in a string are alphabets, uppercase, lowercase, or both
 bool isAlphabet(string s){
-	s = lowercase(s);
 	uinteger i;
 	bool r=true;
-	ubyte chCode;
 	for (i=0;i<s.length;i++){
-		chCode = cast(ubyte)s[i];
-		if (chCode<97 || chCode>122){r=false;break;}
+		if ((s[i] < 'a' || s[i] > 'z') && (s[i]<'A' || s[i] > 'Z')){
+			r = false;
+			break;
+		}
 	}
 	return r;
 }
@@ -208,4 +210,5 @@ bool isAlphabet(string s){
 unittest{
 	assert("aBcDEf".isAlphabet == true);
 	assert("ABCd_".isAlphabet == false);
+	assert("ABC12".isAlphabet == false);
 }
