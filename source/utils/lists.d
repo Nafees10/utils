@@ -620,9 +620,9 @@ public:
 		}
 		return r;
 	}
-	/// Returns true if list contains all elements provided in an array
+	/// Returns true if list contains all elements provided in an array, else, false
 	/// 
-	/// It will fail if the array contains the same elements at more than one index
+	/// returns false if the array contains the same elements at more than one index
 	bool hasElements(T[] nodes){
 		bool r = false;
 		nodes = nodes.dup;
@@ -634,6 +634,10 @@ public:
 			if (index >= 0){
 				// this node matched, so remove it from the array
 				nodes = nodes.deleteElement(index);
+			}
+			// check if all elements have been checked against
+			if (nodes.length == 0){
+				break;
 			}
 			// move to next node
 			currentNode = (*currentNode).next;
