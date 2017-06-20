@@ -146,6 +146,31 @@ unittest{
 	assert([1, 2, 3, 4].reverseArray == [4, 3, 2, 1]);
 }
 
+/// Returns true if a string is a number, with a decimal point, or without
+private bool isNum(string s){
+	bool r=true;
+	uinteger i;
+	bool hasDecimalPoint = false;
+	for (i=0;i<s.length;i++){
+		if (!"0123456789".hasElement(s[i])){
+			if (hasDecimalPoint){
+				r = false;
+				break;
+			}else if (s[i] == '.'){
+				hasDecimalPoint = true;
+			}
+		}
+	}
+	return r;
+}
+///
+unittest{
+	assert("32".isNum == true);
+	assert("32.2".isNum == true);
+	assert("32.2.4".isNum == false);
+	assert("5.a".isNum == false);
+}
+
 /// Returns a string with all uppercase alphabets converted into lowercase
 string lowercase(string s){
 	string tmstr;
