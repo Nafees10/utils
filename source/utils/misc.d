@@ -71,7 +71,7 @@ unittest{
 	assert([0, 1, 2].hasElement(4) == false);
 }
 /// Returns true if array contains all elements provided in an array, else, false
-bool hasElements(T)(T[] array, T[] elements){
+bool hasElement(T)(T[] array, T[] elements){
 	bool r = true;
 	elements = elements.dup;
 	// go through the list and match as many elements as possible
@@ -87,10 +87,31 @@ bool hasElements(T)(T[] array, T[] elements){
 }
 ///
 unittest{
-	assert([0, 1, 2].hasElements([2, 0, 1]) == true);
-	assert([0, 1, 2].hasElements([2, 0, 1, 1, 0, 2]) == true); // it works different-ly from `LinkedList.hasElements`
-	assert([0, 1, 2].hasElements([1, 2]) == true);
-	assert([0, 1, 2].hasElements([2, 4]) == false);
+	assert([0, 1, 2].hasElement([2, 0, 1]) == true);
+	assert([0, 1, 2].hasElement([2, 0, 1, 1, 0, 2]) == true); // it works different-ly from `LinkedList.hasElements`
+	assert([0, 1, 2].hasElement([1, 2]) == true);
+	assert([0, 1, 2].hasElement([2, 4]) == false);
+}
+/// Returns true if all elements in array match with another array's elements.
+/// Index, and the number of times the element is present in each array doesn't matter
+/// 
+/// params
+/// toMatch is the array to perform the check on
+/// elements is the array containing the elements that will be compared against
+bool matchElements(T)(T[] toMatch, T[] elements){
+	bool r = true;
+	foreach(currentToMatch; toMatch){
+		if (!elements.hasElement(currentToMatch)){
+			r = false;
+			break;
+		}
+	}
+	return r;
+}
+///
+unittest{
+	assert("Hello".matchElements("aeloH") == true);
+	assert("abcd".matchElements("cda") == false);
 }
 
 /// Returns the index of an element in an array, negative one if not found
