@@ -169,7 +169,7 @@ unittest{
 }
 
 /// Returns true if a string is a number, with a decimal point, or without
-private bool isNum(string s){
+bool isNum(string s){
 	bool r=true;
 	uinteger i;
 	bool hasDecimalPoint = false;
