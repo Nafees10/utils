@@ -335,6 +335,8 @@ private:
 	LinkedItem!(T)* lastReadPtr;//the pointer to the last item that was read
 
 	uinteger itemCount;//stores the total number of items
+
+	LinkedItem!(T)*[uinteger] bookmarks;
 public:
 	this(){
 		firstItemPtr = null;
@@ -477,7 +479,7 @@ public:
 
 						r = true;
 					}/*else{
-						something that shouldn't have gone wrong went wrong with `linkedList.itemCount`
+						something that shouldn't have gone wrong went wrong with `LinkedList.itemCount`
 					}*/
 
 				}
@@ -648,6 +650,55 @@ public:
 		}
 		return r;
 	}
+	/// Sets a "bookmark", and returns the bookmark-ID, throws Exception if there is no last-read-item to place bookmark on
+	/// 
+	/// this ID can later be used to go back to the reading position at which the bookmark was placed
+	uinteger placeBookmark(){
+		if (lastReadPtr is null){
+			throw new Exception("no last-read-item to place bookmark on");
+		}else{
+			// go through bookmarks list to find empty slot, or create a new one
+			uinteger id = 0;
+			while (true){
+				if (id in bookmarks){
+					id ++;
+				}else{
+					break;
+				}
+			}
+			bookmarks[id] = lastReadPtr.next;
+			return id;
+		}
+	}
+	/// moves read/insert position back to a bookmark using the bookmark ID
+	/// Does NOT delete the bookmark. Use `LinkedList.removeBookmark` to delete
+	/// Retutns true if successful
+	/// false if the bookmark ID no longer exists
+	bool moveToBookmark(uinteger id){
+		if (id !in bookmarks){
+			return false;
+		}else{
+			nextReadPtr = bookmarks[id];
+			return true;
+		}
+	}
+	/// removes a bookmark using the bookmark id
+	/// returns true if successful
+	/// false if the bookmark doesn't exist
+	bool removeBookmark(uinteger id){
+		if (id !in bookmarks){
+			return false;
+		}else{
+			bookmarks.remove(id);
+			return true;
+		}
+	}
+	/// Removes all bookmarks
+	void clearBookmarks(){
+		foreach(key; bookmarks.keys){
+			bookmarks.remove(key);
+		}
+	}
 }
 /// Unittests for `utils.lists.LinkedList`
 unittest{
@@ -732,6 +783,20 @@ unittest{
 	list.read();
 	assert(list.removeLastRead() == true);
 	assert(list.toArray() == [0, 1]);
+	//bookmarks
+	list.clear;
+	list.append([0, 1, 2, 3, 4, 5]);
+	assert(*list.read == 0);
+	assert(*list.read == 1);
+	assert(*list.read == 2);
+	{
+		uinteger id = list.placeBookmark;
+		assert(*list.read == 3);
+		assert(list.moveToBookmark(id + 1) == false);
+		assert(list.moveToBookmark(id) == true);
+		assert(*list.read == 3);
+		assert(list.removeBookmark(id) == true);
+	}
 	destroy(list);
 }
 
