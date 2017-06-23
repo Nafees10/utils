@@ -196,11 +196,11 @@ bool isNum(string s){
 	bool hasDecimalPoint = false;
 	for (i=0;i<s.length;i++){
 		if (!"0123456789".hasElement(s[i])){
-			if (hasDecimalPoint){
+			if (s[i] == '.' && !hasDecimalPoint){
+				hasDecimalPoint = true;
+			}else{
 				r = false;
 				break;
-			}else if (s[i] == '.'){
-				hasDecimalPoint = true;
 			}
 		}
 	}
@@ -212,6 +212,7 @@ unittest{
 	assert("32.2".isNum == true);
 	assert("32.2.4".isNum == false);
 	assert("5.a".isNum == false);
+	assert("thisIsAVar_1234".isNum == false);
 }
 
 /// Returns a string with all uppercase alphabets converted into lowercase
