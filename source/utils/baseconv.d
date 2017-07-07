@@ -4,10 +4,11 @@
 +/
 module utils.baseconv;
 
+import utils.misc;
 import std.math;
 
-private size_t toDenary(ushort fromBase, ubyte[] dat){
-	size_t r = 0, i = 0;
+private uinteger toDenary(ushort fromBase, ubyte[] dat){
+	uinteger r = 0, i = 0;
 	foreach_reverse(cur; dat){
 		r += pow(fromBase,i)*cur;
 		i++;
@@ -19,7 +20,7 @@ unittest{
 	assert(toDenary(2, [1, 0, 0, 1]) == 9);
 }
 
-private ubyte[] fromDenary(ushort toBase, size_t dat){
+private ubyte[] fromDenary(ushort toBase, uinteger dat){
 	ubyte rem;
 	ubyte[] r;
 	while (dat>0){
@@ -36,7 +37,7 @@ unittest{
 }
 
 private string toFormat(ubyte[] ar, char[] rep){
-	size_t i;
+	uinteger i;
 	char[] r;
 	r.length = ar.length;
 	for (i=0; i<ar.length; i++){
@@ -50,7 +51,7 @@ unittest{
 }
 
 private ubyte[] fromFormat(string ar, char[] rep){
-	size_t i;
+	uinteger i;
 	ubyte[] r;
 	r.length = ar.length;
 	for (i=0; i<ar.length; i++){
@@ -63,8 +64,8 @@ unittest{
 	assert("1001".fromFormat(['0', '1']) == [1, 0, 0, 1]);
 }
 
-private size_t strSearch(string s, char ss){
-	size_t i;
+private uinteger strSearch(string s, char ss){
+	uinteger i;
 	for (i=0; i<s.length; i++){
 		if (s[i]==ss){
 			break;
@@ -78,7 +79,7 @@ private size_t strSearch(string s, char ss){
 //exported functions:
 
 /// To 'encode' an unsigned integer into anarray of char
-char[] denaryToChar(size_t den){
+char[] denaryToChar(uinteger den){
 	return cast(char[])fromDenary(256,den);
 }
 ///
@@ -87,7 +88,7 @@ unittest{
 }
 
 /// To decode 'stream of char' into unsigned integer
-size_t charToDenary(char[] ch){
+uinteger charToDenary(char[] ch){
 	return toDenary(256,cast(ubyte[])ch);
 }
 ///
@@ -96,7 +97,7 @@ unittest{
 }
 
 /// Converts a hex from string into unsigned integer
-size_t hexToDenary(string hex){
+uinteger hexToDenary(string hex){
 	ubyte[] buffer;
 	buffer = fromFormat(hex,cast(char[])"0123456789ABCDEF");
 	return toDenary(16,buffer);
@@ -107,7 +108,7 @@ unittest{
 }
 
 /// Converts unsigned integer into hex
-string denaryToHex(size_t den){
+string denaryToHex(uinteger den){
 	ubyte[] buffer;
 	return toFormat(fromDenary(16,den),cast(char[])"0123456789ABCDEF");
 }
@@ -117,7 +118,7 @@ unittest{
 }
 
 /// Converts a binary number from string into denary
-size_t binaryToDenary(string bin){
+uinteger binaryToDenary(string bin){
 	ubyte[] buffer;
 	buffer = fromFormat(bin, cast(char[])"01");
 	return toDenary(2, buffer);
@@ -128,7 +129,7 @@ unittest{
 }
 
 /// Converts a denary number into a binary number in string
-string denaryToBinary(size_t den){
+string denaryToBinary(uinteger den){
 	ubyte[] buffer;
 	return toFormat(fromDenary(2,den),cast(char[])"01");
 }
