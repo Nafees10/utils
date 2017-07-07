@@ -886,7 +886,7 @@ public:
 		// check if `size` number of chars are left
 		if (size + seekPos <= stream.length){
 			void[] r = stream[seekPos .. seekPos+size].dup;
-			seekPos += size-1;
+			seekPos += size;
 			return r;
 		}else if (seekPos < stream.length){
 			void[] r = stream[seekPos .. stream.length].dup;
@@ -927,6 +927,28 @@ public:
 	void write(ubyte t){
 		write([t]);
 	}
+	/// Removes a number of bytes starting from the seek-position
+	/// 
+	/// Returns true if it was able to remove some bytes, false if not
+	bool remove(uinteger count = 1){
+		// make sure there are enough bytes to remove
+		if (seekPos + count > stream.length){
+			// remove as much as possible
+			if (seekPos >= stream.length){
+				return false;
+			}else{
+				stream = stream[0 .. seekPos-1];
+			}
+		}else{
+			stream = stream[0 .. seekPos-1] ~ stream[seekPos + count .. stream.length];
+		}
+		return true;
+	}
+	/// Clears the stream, resets the stream
+	void clear(){
+		stream.length = 0;
+		seekPos = 0;
+	}
 	/// The seek position, from where the next char(s) will be read, or written to
 	@property uinteger seek(){
 		return seekPos;
@@ -959,4 +981,23 @@ unittest{
 	assert(stream.seek == 4);
 	stream.seek = 0;
 	assert(stream.read(stream.size) == cast(ubyte[])"ABCDE");
+	stream.seek = 0;
+	assert(stream.read(cast(ubyte)'C') == cast(ubyte[])"ABC");
+	stream.seek = 0;
+	assert(stream.read(cast(ubyte)'Z') == cast(ubyte[])"ABCDE");
+	// clear
+	stream.clear;
+	assert(stream.size == 0);
+	assert(stream.seek == 0);
+	// remove
+	stream.write(cast(ubyte[])"ABCDE");
+	stream.seek = 3;
+	assert(stream.remove(99) == true);
+	stream.seek = 0;
+	assert(stream.read(cast(ubyte)'Z') == cast(ubyte[])"AB");
+	stream.write(cast(ubyte[])"CDE");
+	stream.seek = 1;
+	assert(stream.remove(2) == true);
+	stream.seek = 0;
+	assert(stream.read(cast(ubyte)'Z') == "DE");
 }
