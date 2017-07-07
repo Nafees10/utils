@@ -923,6 +923,10 @@ public:
 			seekPos += t.length;
 		}
 	}
+	/// Writes a byte at the seek-position, and moves seek to end of the written data
+	void write(ubyte t){
+		write([t]);
+	}
 	/// The seek position, from where the next char(s) will be read, or written to
 	@property uinteger seek(){
 		return seekPos;
@@ -939,4 +943,20 @@ public:
 	@property uinteger size(){
 		return stream.length;
 	}
+}
+/// unittests for FileReader
+unittest{
+	// file loading/ saving not tested
+	FileReader stream = new FileReader();
+	assert(stream.seek == 0);
+	// write & read
+	stream.write(cast(ubyte[])"ABCE");
+	assert(stream.seek == 4);
+	assert(stream.size == 4);
+	stream.seek = 3;
+	stream.write(cast(ubyte)'D');
+	assert(stream.size == 5);
+	assert(stream.seek == 4);
+	stream.seek = 0;
+	assert(stream.read(stream.size) == cast(ubyte[])"ABCDE");
 }
