@@ -857,16 +857,28 @@ public:
 /// For reading files. Can also be used for writing
 class FileReader{
 private:
-	void[] stream = null;
+	ubyte[] stream = null;
 	uinteger seekPos = 0;
 public:
 	/// If filename is not null, attempts to load file into memory
 	this(string filename=null){
-		stream = std.file.read(filename);
+		if (filename != null){
+			this.loadFile(filename);
+		}
 	}
 	~this(){
 		// destructor, nothing to do yet
 	}
+	/// loads file into memory, throws exception if fails
+	void loadFile(string filename){
+		stream = cast(ubyte[])std.file.read(filename);
+		seekPos = 0;
+	}
+	/// Writes the stream to a file, throws exception if fails
+	void saveFile(string filename){
+		std.file.write(filename, cast(void[])stream.dup);
+	}
+
 	/// reads and returns `size` number of bytes from file starting from seek-position
 	/// If not enough bytes are left, the array returned will be smaller than `size`
 	/// Returns null if the seek-position is at end, or if there are no bytes to be read
@@ -885,8 +897,20 @@ public:
 			return null;
 		}
 	}
+	/// Reads and returns bytes starting from seek till `terminate` byte, or if EOF is reached
+	void[] read(ubyte terminate){
+		uinteger readFrom = seekPos;
+		while (seekPos < stream.length){
+			if (stream[seekPos] == terminate){
+				seekPos ++;// to include the terminate byte in result
+				break;
+			}
+			seekPos ++;
+		}
+		return stream[readFrom .. seekPos].dup;
+	}
 	/// Writes an array at the seek-position, and moves seek to end of the written data
-	void write(void[] t){
+	void write(ubyte[] t){
 		if (seekPos > stream.length){
 			throw new Exception("failed to write data to stream. Seek is out of stream.length");
 		}else if (seekPos == stream.length){
@@ -895,7 +919,8 @@ public:
 			seekPos = stream.length;
 		}else{
 			// insert it in the middle
-			// TODO ^
+			stream = stream[0 .. seekPos] ~ t ~ stream[seekPos .. stream.length];
+			seekPos += t.length;
 		}
 	}
 	/// The seek position, from where the next char(s) will be read, or written to
@@ -909,5 +934,9 @@ public:
 		}else{
 			return seekPos = newSeek;
 		}
+	}
+	/// The size of file in bytes, read-only
+	@property uinteger size(){
+		return stream.length;
 	}
 }
