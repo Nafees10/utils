@@ -853,3 +853,61 @@ public:
 		return maxLen;
 	}
 }
+
+/// For reading files. Can also be used for writing
+class FileReader{
+private:
+	void[] stream = null;
+	uinteger seekPos = 0;
+public:
+	/// If filename is not null, attempts to load file into memory
+	this(string filename=null){
+		stream = std.file.read(filename);
+	}
+	~this(){
+		// destructor, nothing to do yet
+	}
+	/// reads and returns `size` number of bytes from file starting from seek-position
+	/// If not enough bytes are left, the array returned will be smaller than `size`
+	/// Returns null if the seek-position is at end, or if there are no bytes to be read
+	void[] read(uinteger size=1){
+		// check if `size` number of chars are left
+		if (size + seekPos <= stream.length){
+			void[] r = stream[seekPos .. seekPos+size].dup;
+			seekPos += size-1;
+			return r;
+		}else if (seekPos < stream.length){
+			void[] r = stream[seekPos .. stream.length].dup;
+			seekPos = stream.length;
+			return r;
+		}else{
+			// nothing left to read, return null
+			return null;
+		}
+	}
+	/// Writes an array at the seek-position, and moves seek to end of the written data
+	void write(void[] t){
+		if (seekPos > stream.length){
+			throw new Exception("failed to write data to stream. Seek is out of stream.length");
+		}else if (seekPos == stream.length){
+			// just append to end of stream
+			stream = stream ~ t.dup;
+			seekPos = stream.length;
+		}else{
+			// insert it in the middle
+			// TODO ^
+		}
+	}
+	/// The seek position, from where the next char(s) will be read, or written to
+	@property uinteger seek(){
+		return seekPos;
+	}
+	/// The seek position, from where the next char(s) will be read, or written to
+	@property uinteger seek(uinteger newSeek){
+		if (newSeek > stream.length){
+			return seekPos = stream.length;
+		}else{
+			return seekPos = newSeek;
+		}
+	}
+}
