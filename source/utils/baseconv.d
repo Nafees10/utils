@@ -78,6 +78,33 @@ private uinteger strSearch(string s, char ss){
 }
 //exported functions:
 
+/// Converts from denary to another base
+/// 
+/// denaryNumber is the denary to convert
+/// newBaseDigits are the digits of the new base in the ascending order, for hex, this will be `cast(char[])"0123456789ABCDEF"`
+/// newbaseDigits must have at least 2 digits
+string denaryToBase(uinteger denaryNumber, char[] newBaseDigits){
+	assert(newBaseDigits.length >= 2);
+	return toFormat(fromDenary(cast(ushort)newBaseDigits.length, denaryNumber), newBaseDigits);
+}
+///
+unittest{
+	assert(denaryToBase(161,cast(char[])"0123456789ABCDEF") == "A1");
+}
+
+/// Converts from any base to denary using the digits of the provided base
+/// 
+/// baseNumber is the number in another base to convert to denary
+/// baseDigits is the digits of the base to convert from, in asennding order
+uinteger baseToDenary(string baseNumber, char[] baseDigits){
+	assert(baseDigits.length >= 2);
+	return toDenary(cast(ushort)baseDigits.length, fromFormat(baseNumber, baseDigits));
+}
+///
+unittest{
+	assert(baseToDenary("A1", cast(char[])"0123456789ABCDEF") == 161);
+}
+
 /// To 'encode' an unsigned integer into anarray of char
 char[] denaryToChar(uinteger den){
 	return cast(char[])fromDenary(256,den);
