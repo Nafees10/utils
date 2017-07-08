@@ -55,26 +55,13 @@ private ubyte[] fromFormat(string ar, char[] rep){
 	ubyte[] r;
 	r.length = ar.length;
 	for (i=0; i<ar.length; i++){
-		r[i] = cast(ubyte)strSearch(cast(string)rep, ar[i]);
+		r[i] = cast(ubyte)rep.indexOf(ar[i]);
 	}
 	return r;
 }
 ///
 unittest{
 	assert("1001".fromFormat(['0', '1']) == [1, 0, 0, 1]);
-}
-
-private uinteger strSearch(string s, char ss){
-	uinteger i;
-	for (i=0; i<s.length; i++){
-		if (s[i]==ss){
-			break;
-		}
-	}
-	if (i>=s.length){
-		i = -1;
-	}
-	return i;
 }
 //exported functions:
 
