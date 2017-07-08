@@ -112,9 +112,7 @@ unittest{
 
 /// Converts a hex from string into unsigned integer
 uinteger hexToDenary(string hex){
-	ubyte[] buffer;
-	buffer = fromFormat(hex,cast(char[])"0123456789ABCDEF");
-	return toDenary(16,buffer);
+	return baseToDenary(hex, cast(char[])"0123456789ABCDEF");
 }
 ///
 unittest{
@@ -123,8 +121,7 @@ unittest{
 
 /// Converts unsigned integer into hex
 string denaryToHex(uinteger den){
-	ubyte[] buffer;
-	return toFormat(fromDenary(16,den),cast(char[])"0123456789ABCDEF");
+	return denaryToBase(den, cast(char[])"0123456789ABCDEF");
 }
 ///
 unittest{
@@ -133,9 +130,7 @@ unittest{
 
 /// Converts a binary number from string into denary
 uinteger binaryToDenary(string bin){
-	ubyte[] buffer;
-	buffer = fromFormat(bin, cast(char[])"01");
-	return toDenary(2, buffer);
+	return baseToDenary(bin, ['0', '1']);
 }
 ///
 unittest{
@@ -144,8 +139,7 @@ unittest{
 
 /// Converts a denary number into a binary number in string
 string denaryToBinary(uinteger den){
-	ubyte[] buffer;
-	return toFormat(fromDenary(2,den),cast(char[])"01");
+	return denaryToBase(den, ['0', '1']);
 }
 ///
 unittest{
