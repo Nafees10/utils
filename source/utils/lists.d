@@ -267,18 +267,31 @@ public:
 	}
 	/// Reads and removes an array of items from the stack,
 	/// if not enough items are left, throws Exception
-	T[] pop(uinteger count){
+	/// 
+	/// count is the number of elements to return
+	/// `reverse`, if true, elements are read in reverse, last-pushed is last in array
+	T[] pop(bool reverse=false)(uinteger count){
 		//make sure there are enough items
 		if (itemCount >= count){
 			T[] r;
 			r.length = count;
 			stackItem!(T)* ptr = lastItemPtr;
-			for (uinteger i = 0; i < count; i ++){
-				r[i] = (*ptr).data;
-				ptr = (*ptr).prev;
-				//delete it
-				destroy(*lastItemPtr);
-				lastItemPtr = ptr;
+			static if (reverse){
+				for (integer i = count-1; i >= 0; i --){
+					r[i] = (*ptr).data;
+					ptr = (*ptr).prev;
+					// delete this item
+					.destroy(*lastItemPtr);
+					lastItemPtr = ptr;
+				}
+			}else{
+				for (uinteger i = 0; i < count; i ++){
+					r[i] = (*ptr).data;
+					ptr = (*ptr).prev;
+					//delete it
+					.destroy(*lastItemPtr);
+					lastItemPtr = ptr;
+				}
 			}
 			//decrease count
 			itemCount -= r.length;
@@ -313,6 +326,8 @@ unittest{
 	stack.push([1, 2]);
 	assert(stack.pop == 2);
 	assert(stack.pop(2) == [1, 0]);
+	stack.push([1, 0]);
+	assert(stack.pop!(true)(2) == [1, 0]);
 	//`Stack.clear` && `Stack.count`
 	stack.push(0);
 	assert(stack.count == 1);
