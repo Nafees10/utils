@@ -14,11 +14,18 @@ class List(T){
 private:
 	T[] list;
 	uinteger taken=0;
+	uinteger extraAlloc;
 public:
+	/// constructor
+	/// 
+	/// extraCount is the number of extra space to make for new elements when making "room" for new elements
+	this(uinteger extraCount = 4){
+		extraAlloc = extraCount;
+	}
 	/// appends an element to the list
 	void add(T dat){
 		if (taken==list.length){
-			list.length+=10;
+			list.length+=extraAlloc;
 		}
 		taken++;
 		list[taken-1] = dat;
@@ -48,7 +55,7 @@ public:
 	/// Removes last elements(s); number of elements to remove is in `count`
 	void removeLast(uinteger count = 1){
 		taken -= count;
-		if (list.length-taken>10){
+		if (list.length-taken>extraAlloc){
 			list.length=taken;
 		}
 	}
@@ -75,8 +82,8 @@ public:
 		T[] ar,ar2;
 		ar=list[0..index];
 		ar2=list[index..taken];
-		list.length=0;
-		list=ar~[dat]~ar2;
+		list.length = [];
+		list=(ar~[dat]~ar2).dup;
 		taken++;
 	}
 	/// Writes the list to a file.
@@ -99,8 +106,7 @@ public:
 	/// The slice is copied to avoid data in list from getting changed
 	T[] readRange(uinteger index,uinteger i2){
 		T[] r;
-		r.length = (i2-index);
-		r[0 .. r.length] = list[index .. i2];
+		r = list[index .. i2].dup;
 		return r;
 	}
 	/// Reads the last element in list.
@@ -110,8 +116,7 @@ public:
 	/// returns last elements in list. number of elements to return is specified in `count`
 	T[] readLast(uinteger count){
 		T[] r;
-		r.length = count;
-		r[0 .. r.length] = list[taken-count..taken];
+		r = list[taken-count..taken].dup;
 		return r;
 	}
 	/// length of the list
@@ -120,37 +125,25 @@ public:
 	}
 	/// Exports this list into a array
 	T[] toArray(){
-		uinteger i;
-		T[] r;
-		if (taken!=-1){
-			r.length=taken;
-			for (i=0;i<taken;i++){//using a loop cuz simple '=' will just copy the pionter
-				r[i]=list[i];
-			}
-		}
-		return r;
+		return list.dup;
 	}
 	/// Loads array into this list
-	void loadArray(T[] dats){
+	void loadArray(T[] newList){
 		uinteger i;
-		list.length=dats.length;
-		taken=list.length;
-		for (i=0;i<dats.length;i++){
-			list[i]=dats[i];
-		}
+		list = newList.length;
 	}
 	/// empties the list
 	void clear(){
-		list.length=0;
-		taken=0;
+		list = [];
+		taken = 0;
 	}
 	/// Returns index of the first matching element. -1 if not found
 	/// 
 	/// `dat` is the element to search for
 	/// `i` is the index from where to start, default is 0
 	/// `forward` if true, searches in a forward direction, from lower index to higher
-	integer indexOf(T dat, integer i=0, bool forward=true){
-		if (forward){
+	integer indexOf(bool forward=true)(T dat, integer i=0){
+		static if (forward){
 			for (;i<taken;i++){
 				if (list[i]==dat){break;}
 				if (i==taken-1){i=-1;break;}
