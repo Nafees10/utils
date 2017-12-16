@@ -41,7 +41,7 @@ string[] fileToArray(string fname){
 
 /// Writes an array of string to a file
 /// Throws exception on failure
-void arrayToFile(string fname,string[] array){
+void arrayToFile(string[] array, string fname){
 	try{
 		File f = File(fname,"w");
 		uinteger i;
@@ -95,9 +95,8 @@ unittest{
 /// Returns true if all elements in array match with another array's elements.
 /// Index, and the number of times the element is present in each array doesn't matter
 /// 
-/// params
-/// toMatch is the array to perform the check on
-/// elements is the array containing the elements that will be compared against
+/// `toMatch` is the array to perform the check on
+/// `elements` is the array containing the elements that will be compared against
 bool matchElements(T)(T[] toMatch, T[] elements){
 	bool r = true;
 	foreach(currentToMatch; toMatch){
@@ -255,4 +254,56 @@ unittest{
 	assert("aBcDEf".isAlphabet == true);
 	assert("ABCd_".isAlphabet == false);
 	assert("ABC12".isAlphabet == false);
+}
+
+/// generates a markdown table for some data.
+/// 
+/// `headings` is the headings for each column. Left-to-Right
+/// `data` contains each row's data. All rows must be same length
+string[] makeTable(T)(string[] headings, T[][] data){
+	assert(headings.length > 0, "cannot make table with no headings");
+	assert(data.length > 0, "cannot make table with no data");
+	assert(headings.length == data[0].length, "headings.length does not equal data.length "~to!string(headings.length)~"!="~
+		to!string(data[0].length));
+	import utils.lists;
+	// stores the data in string
+	string[][] sData;
+	// convert it all to string
+	static if (is (T == string)){
+		sData = data;
+	}else{
+		sData.length = data.length;
+		foreach (rowNum, row; data){
+			sData[rowNum].length = row.length;
+			foreach (cellNum, cell; row){
+				sData[rowNum][cellNum] = to!string(cell);
+			}
+		}
+	}
+	// now make the table
+	LinkedList!string table = new LinkedList!string;
+	// add headings
+	{
+		string line;
+		string alignment;
+		line = headings[0];
+		alignment = "---";
+		for (uinteger i = 1; i < headings.length; i ++){
+			line ~= " | "~headings[i];
+			alignment ~= " | ---";
+		}
+		table.append([line, alignment]);
+	}
+	// now begin with the data
+	for (uinteger rowNum = 0; rowNum < sData.length; rowNum ++){
+		string[] row = sData[rowNum];
+		string line = row[0];
+		foreach (cell; row){
+			line ~= " | "~cell;
+		}
+		table.append (line);
+	}
+	string[] r = table.toArray;
+	.destroy(table);
+	return r;
 }
