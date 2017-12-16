@@ -82,7 +82,6 @@ public:
 		T[] ar,ar2;
 		ar=list[0..index];
 		ar2=list[index..taken];
-		list.length = [];
 		list=(ar~[dat]~ar2).dup;
 		taken++;
 	}
@@ -130,7 +129,7 @@ public:
 	/// Loads array into this list
 	void loadArray(T[] newList){
 		uinteger i;
-		list = newList.length;
+		list = newList.dup;
 	}
 	/// empties the list
 	void clear(){
