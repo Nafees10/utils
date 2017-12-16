@@ -295,12 +295,12 @@ string[] makeTable(T)(string[] headings, T[][] data){
 		table.append([line, alignment]);
 	}
 	// now begin with the data
-	for (uinteger rowNum = 0; rowNum < sData.length; rowNum ++){
-		string[] row = sData[rowNum];
-		string line = row[0];
+	foreach (row; sData){
+		string line/* = row[0]*/;
 		foreach (cell; row){
-			line ~= " | "~cell;
+			line ~= cell~" | ";
 		}
+		line.length -= 3;
 		table.append (line);
 	}
 	string[] r = table.toArray;
