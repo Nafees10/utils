@@ -130,6 +130,7 @@ public:
 	void loadArray(T[] newList){
 		uinteger i;
 		list = newList.dup;
+		taken = newList.length;
 	}
 	/// empties the list
 	void clear(){
