@@ -1030,44 +1030,78 @@ struct TreeReader(T){
 	}
 	/// counts and returns number of nodes in the tree
 	uinteger count(){
-		/// stores all the nodes of whose childNodes's  have to be counted
-		Stack!(TreeNode!T) toCountChildNodes = new Stack(TreeNode!T);
-		/// start from root
-		toCountChildNodes.push(root);
-		/// count
+		// stores the count
 		uinteger r = 0;
-		while (toCountChildNodes.count > 0){
-			/// the node whose childs are being currently being counted:
-			TreeNode!T currentNode = toCountChildNodes.pop;
-			// +1 for this node
-			r++;
-			// and have to count their childNodes too
-			toCountChildNodes.push(currentNode.childNodes);
+		/// used to "receive" nodes from iterate
+		bool increaseCount(TreeNode!T node){
+			r ++;
+			return true;
 		}
-		.destroy(toCountChildNodes);
+		// start counting
+		iterate(&increaseCount);
 		return r;
 	}
 	/// counts and returns number of nodes in the tree
 	/// 
 	/// if `doCount` is not null, only nodes for which `doCount` function returns true will be counted
 	uinteger count(bool function(TreeNode!T) doCount=null){
-		/// stores all the nodes of whose childNodes's  have to be counted
-		Stack!(TreeNode!T) toCountChildNodes = new Stack(TreeNode!T);
-		/// start from root
-		toCountChildNodes.push(root);
-		/// count
+		/// stores the count
 		uinteger r = 0;
-		while (toCountChildNodes.count > 0){
-			/// the node whose childs are being currently being counted:
-			TreeNode!T currentNode = toCountChildNodes.pop;
-			// +1 for this node, only if it meets the criteria in the doCount function
-			if (doCount !is null && (*doCount)(currentNode)){
-				r++;
+		/// used to "receive" nodes from iterate
+		bool increaseCount(TreeNode!T node){
+			if (doCount !is null && (*doCount)(node)){
+				r ++;
 			}
-			// and have to count their childNodes too
-			toCountChildNodes.push(currentNode.childNodes);
+			return true;
 		}
-		.destroy(toCountChildNodes);
+		// start counting
+		iterate(&increaseCount);
 		return r;
 	}
+	/// calls a function on every node
+	///
+	/// loop is terminated as soon as false is returned from function
+	void iterate(bool function(TreeNode!T) func){
+		if (func is null){
+			throw new Exception ("func cannot be null in callOnNodes");
+		}
+		/// stores all the nodes of whose childNodes's  have to be sent
+		Stack!(TreeNode!T) nodes = new Stack!(TreeNode!T);
+		/// start from root
+		nodes.push(root);
+		while (nodes.count > 0){
+			/// the node whose childs are being currently being "sent":
+			TreeNode!T currentNode = nodes.pop;
+			// "send" this node
+			func(currentNode);
+			// and have to send their childNodes too
+			nodes.push(currentNode.childNodes);
+		}
+		.destroy(nodes);
+	}
+	/// calls a delegate on every node
+	///
+	/// loop is terminated as soon as false is returned from function
+	void iterate(bool delegate(TreeNode!T) func){
+		if (func is null){
+			throw new Exception ("func cannot be null in callOnNodes");
+		}
+		/// stores all the nodes of whose childNodes's  have to be sent
+		Stack!(TreeNode!T) nodes = new Stack!(TreeNode!T);
+		/// start from root
+		nodes.push(root);
+		while (nodes.count > 0){
+			/// the node whose childs are being currently being "sent":
+			TreeNode!T currentNode = nodes.pop;
+			// "send" this node
+			func(currentNode);
+			// and have to send their childNodes too
+			nodes.push(currentNode.childNodes);
+		}
+		.destroy(nodes);
+	}
+}
+/// unittests for TreeReader
+unittest{
+	TreeReader!int tree;
 }
