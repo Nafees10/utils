@@ -1011,3 +1011,63 @@ unittest{
 	stream.seek = 0;
 	assert(stream.read(cast(ubyte)'Z') == "DE");
 }
+
+/// used by Tree class to hold individual nodes in the tree
+struct TreeNode(T){
+	T data; /// the data stored
+	TreeNode!(T)* parentPtr; /// pointer to the parent node, if this is null, this is the root of the tree
+	TreeNode!(T)[] childNodes; /// stores child nodes
+}
+/// To make reading a Tree (made up of TreeNode) a bit easier
+struct TreeReader(T){
+	/// the root node
+	TreeNode!(T) root;
+	/// clears all data from the list
+	///
+	/// all nodes are destroyed, except for the root node
+	void reset(){
+		root.childNodes = [];
+	}
+	/// counts and returns number of nodes in the tree
+	uinteger count(){
+		/// stores all the nodes of whose childNodes's  have to be counted
+		Stack!(TreeNode!T) toCountChildNodes = new Stack(TreeNode!T);
+		/// start from root
+		toCountChildNodes.push(root);
+		/// count
+		uinteger r = 0;
+		while (toCountChildNodes.count > 0){
+			/// the node whose childs are being currently being counted:
+			TreeNode!T currentNode = toCountChildNodes.pop;
+			// +1 for this node
+			r++;
+			// and have to count their childNodes too
+			toCountChildNodes.push(currentNode.childNodes);
+		}
+		.destroy(toCountChildNodes);
+		return r;
+	}
+	/// counts and returns number of nodes in the tree
+	/// 
+	/// if `doCount` is not null, only nodes for which `doCount` function returns true will be counted
+	uinteger count(bool function(TreeNode!T) doCount=null){
+		/// stores all the nodes of whose childNodes's  have to be counted
+		Stack!(TreeNode!T) toCountChildNodes = new Stack(TreeNode!T);
+		/// start from root
+		toCountChildNodes.push(root);
+		/// count
+		uinteger r = 0;
+		while (toCountChildNodes.count > 0){
+			/// the node whose childs are being currently being counted:
+			TreeNode!T currentNode = toCountChildNodes.pop;
+			// +1 for this node, only if it meets the criteria in the doCount function
+			if (doCount !is null && (*doCount)(currentNode)){
+				r++;
+			}
+			// and have to count their childNodes too
+			toCountChildNodes.push(currentNode.childNodes);
+		}
+		.destroy(toCountChildNodes);
+		return r;
+	}
+}
