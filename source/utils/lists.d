@@ -1016,7 +1016,7 @@ unittest{
 struct TreeNode(T){
 	T data; /// the data stored
 	TreeNode!(T)* parentPtr; /// pointer to the parent node, if this is null, this is the root of the tree
-	TreeNode!(T)[] childNodes; /// stores child nodes
+	TreeNode!(T)*[] childNodes; /// stores child nodes
 	/// constructor
 	this(T dataToStore){
 		data = dataToStore;
@@ -1026,11 +1026,11 @@ struct TreeNode(T){
 		parentPtr = parent;
 	}
 	/// constructor
-	this(TreeNode!(T)[] children){
+	this(TreeNode!(T)*[] children){
 		childNodes = children.dup;
 	}
 	/// constructor
-	this(T dataToStore, TreeNode!(T)[] children, TreeNode!(T)* parent){
+	this(T dataToStore, TreeNode!(T)*[] children, TreeNode!(T)* parent){
 		data = dataToStore;
 		childNodes = children.dup;
 		parentPtr = parent;
@@ -1039,12 +1039,12 @@ struct TreeNode(T){
 /// To make reading a Tree (made up of TreeNode) a bit easier
 struct TreeReader(T){
 	/// the root node
-	TreeNode!(T) root;
+	TreeNode!(T)* root;
 	/// clears all data from the list
 	///
 	/// all nodes are destroyed, except for the root node
 	void reset(){
-		root.childNodes = [];
+		root.childNodes = []; // idk if this is how to do it, or should I iterate and .destroy each one
 	}
 	/// counts and returns number of nodes in the tree
 	uinteger count(){
@@ -1084,16 +1084,18 @@ struct TreeReader(T){
 			throw new Exception ("func cannot be null in iterate");
 		}
 		/// stores all the nodes of whose childNodes's  have to be sent
-		Stack!(TreeNode!T) nodes = new Stack!(TreeNode!T);
+		Stack!(TreeNode!(T)*) nodes = new Stack!(TreeNode!(T)*);
 		/// start from root
 		nodes.push(root);
 		while (nodes.count > 0){
 			/// the node whose childs are being currently being "sent":
-			TreeNode!T currentNode = nodes.pop;
+			TreeNode!(T)* currentNode = nodes.pop;
 			// "send" this node
-			func(currentNode);
+			func(*currentNode);
 			// and have to send their childNodes too
-			nodes.push(currentNode.childNodes);
+			foreach (childPtr; currentNode.childNodes){
+				nodes.push(childPtr);
+			}
 		}
 		.destroy(nodes);
 	}
@@ -1105,16 +1107,18 @@ struct TreeReader(T){
 			throw new Exception ("func cannot be null in iterate");
 		}
 		/// stores all the nodes of whose childNodes's  have to be sent
-		Stack!(TreeNode!T) nodes = new Stack!(TreeNode!T);
+		Stack!(TreeNode!(T)*) nodes = new Stack!(TreeNode!(T)*);
 		/// start from root
 		nodes.push(root);
 		while (nodes.count > 0){
 			/// the node whose childs are being currently being "sent":
-			TreeNode!T currentNode = nodes.pop;
+			TreeNode!(T)* currentNode = nodes.pop;
 			// "send" this node
-			func(currentNode);
+			func(*currentNode);
 			// and have to send their childNodes too
-			nodes.push(currentNode.childNodes);
+			foreach (childPtr; currentNode.childNodes){
+				nodes.push(childPtr);
+			}
 		}
 		.destroy(nodes);
 	}
@@ -1127,5 +1131,20 @@ unittest{
 	TreeNode!int rootNode;
 	rootNode.data = 0;
 	// childNodes of root
-	TreeNode!int rootChild0, rootChild1;
+	TreeNode!int rootChild0 = TreeNode!int(1), rootChild1=TreeNode!int(2);
+	// childNodes of rootChild0
+	TreeNode!int child0child0 = TreeNode!int(3), child0child1 = TreeNode!int(4);
+	// childNodes of rootChild1
+	TreeNode!int child1child0 = TreeNode!int(5), child1child1 = TreeNode!int(6);
+	// arrange them in a tree
+	rootNode.childNodes = [&rootChild0, &rootChild1];
+	rootChild0.childNodes = [&child0child0, &child0child1];
+	rootChild1.childNodes = [&child1child0, &child1child1];
+	tree.root = &rootNode;
+	// check if iterate's working
+	uinteger c = 0;
+	tree.iterate((TreeNode!int node){c++; return true;});
+	import std.conv:to;
+	assert(c == 5, "TreeReader.iterate isnt working: expected value of c=5; actual value="~to!string(c));
+	
 }
