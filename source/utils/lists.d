@@ -1017,6 +1017,24 @@ struct TreeNode(T){
 	T data; /// the data stored
 	TreeNode!(T)* parentPtr; /// pointer to the parent node, if this is null, this is the root of the tree
 	TreeNode!(T)[] childNodes; /// stores child nodes
+	/// constructor
+	this(T dataToStore){
+		data = dataToStore;
+	}
+	/// constructor
+	this(TreeNode!(T)* parent){
+		parentPtr = parent;
+	}
+	/// constructor
+	this(TreeNode!(T)[] children){
+		childNodes = children.dup;
+	}
+	/// constructor
+	this(T dataToStore, TreeNode!(T)[] children, TreeNode!(T)* parent){
+		data = dataToStore;
+		childNodes = children.dup;
+		parentPtr = parent;
+	}
 }
 /// To make reading a Tree (made up of TreeNode) a bit easier
 struct TreeReader(T){
@@ -1104,4 +1122,10 @@ struct TreeReader(T){
 /// unittests for TreeReader
 unittest{
 	TreeReader!int tree;
+	// testing iterate
+	// make a sample tree
+	TreeNode!int rootNode;
+	rootNode.data = 0;
+	// childNodes of root
+	TreeNode!int rootChild0, rootChild1;
 }
