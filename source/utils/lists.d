@@ -1063,7 +1063,7 @@ struct TreeReader(T){
 	/// loop is terminated as soon as false is returned from function
 	void iterate(bool function(TreeNode!T) func){
 		if (func is null){
-			throw new Exception ("func cannot be null in callOnNodes");
+			throw new Exception ("func cannot be null in iterate");
 		}
 		/// stores all the nodes of whose childNodes's  have to be sent
 		Stack!(TreeNode!T) nodes = new Stack!(TreeNode!T);
@@ -1084,7 +1084,7 @@ struct TreeReader(T){
 	/// loop is terminated as soon as false is returned from function
 	void iterate(bool delegate(TreeNode!T) func){
 		if (func is null){
-			throw new Exception ("func cannot be null in callOnNodes");
+			throw new Exception ("func cannot be null in iterate");
 		}
 		/// stores all the nodes of whose childNodes's  have to be sent
 		Stack!(TreeNode!T) nodes = new Stack!(TreeNode!T);
