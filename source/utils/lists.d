@@ -1142,9 +1142,8 @@ unittest{
 	rootChild1.childNodes = [&child1child0, &child1child1];
 	tree.root = &rootNode;
 	// check if iterate's working
-	uinteger c = 0;
-	tree.iterate((TreeNode!int node){c++; return true;});
-	import std.conv:to;
-	assert(c == 5, "TreeReader.iterate isnt working: expected value of c=5; actual value="~to!string(c));
-	
+	int[] iteratedNodes;
+	tree.iterate((TreeNode!int node){iteratedNodes ~= node.data; return true;});
+	// make sure each number was iterated
+	assert ([0,1,2,3,4,5,6].matchElements(iteratedNodes), "TreeNode.iterate did not iterate through all nodes");
 }
