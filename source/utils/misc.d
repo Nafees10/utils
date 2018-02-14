@@ -14,44 +14,36 @@ alias uinteger = size_t;
 ///Reads a file into an array of string
 ///Throws exception on failure
 string[] fileToArray(string fname){
-	try{
-		File f = File(fname,"r");
-		string[] r;
-		string line;
-		integer i=0;
-		r.length=0;
-		while (!f.eof()){
-			if (i+1>=r.length){
-				r.length+=5;
-			}
-			line=f.readln;
-			if (line.length>0 && line[line.length-1]=='\n'){
-				line.length--;
-			}
-			r[i]=line;
-			i++;
+	File f = File(fname,"r");
+	string[] r;
+	string line;
+	integer i=0;
+	r.length=0;
+	while (!f.eof()){
+		if (i+1>=r.length){
+			r.length+=5;
 		}
-		f.close;
-		r.length = i;
-		return r;
-	}catch (Exception e){
-		throw e;
+		line=f.readln;
+		if (line.length>0 && line[line.length-1]=='\n'){
+			line.length--;
+		}
+		r[i]=line;
+		i++;
 	}
+	f.close;
+	r.length = i;
+	return r;
 }
 
 /// Writes an array of string to a file
 /// Throws exception on failure
 void arrayToFile(string[] array, string fname){
-	try{
-		File f = File(fname,"w");
-		uinteger i;
-		for (i=0;i<array.length;i++){
-			f.write(array[i],'\n');
-		}
-		f.close;
-	}catch (Exception e){
-		throw e;
+	File f = File(fname,"w");
+	uinteger i;
+	for (i=0;i<array.length;i++){
+		f.write(array[i],'\n');
 	}
+	f.close;
 }
 
 /// Returns true if an aray has an element, false if no
@@ -236,13 +228,19 @@ unittest{
 bool isAlphabet(string s){
 	uinteger i;
 	bool r=true;
-	for (i=0;i<s.length;i++){
+	foreach (c; s){
+		if ((c < 'a' || c > 'z') && (c < 'A' || c > 'Z')){
+			return false;
+		}
+	}
+	return true;
+	/*for (i=0;i<s.length;i++){
 		if ((s[i] < 'a' || s[i] > 'z') && (s[i]<'A' || s[i] > 'Z')){
 			r = false;
 			break;
 		}
 	}
-	return r;
+	return r;*/
 }
 ///
 unittest{
