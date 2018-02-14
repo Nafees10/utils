@@ -217,20 +217,14 @@ unittest{
 
 /// Returns a string with all uppercase alphabets converted into lowercase
 string lowercase(string s){
-	string tmstr;
-	ubyte tmbt;
-	ubyte diff = 'a' - 'A';
-	for (integer i=0;i<s.length;i++){
-		tmbt = cast(ubyte) s[i];
-		if (tmbt>='A' && tmbt<='Z'){
-			tmbt += diff;
-			tmstr ~= cast(char) tmbt;
-		}else{
-			tmstr ~= s[i];
+	static const ubyte diff = 'a' - 'A';
+	char[] r = (cast(char[])s).dup;
+	foreach (i, c; r){
+		if (c >= 'A' && c <= 'Z'){
+			r[i] = cast(char)(c+diff);
 		}
 	}
-	
-	return tmstr;
+	return cast(string)r;
 }
 ///
 unittest{
