@@ -189,21 +189,20 @@ unittest{
 }
 
 /// Returns true if a string is a number, with a decimal point, or without
-bool isNum(string s){
-	bool r=true;
+bool isNum(string s, bool allowDecimalPoint=true){
 	uinteger i;
 	bool hasDecimalPoint = false;
-	for (i=0;i<s.length;i++){
-		if (!"0123456789".hasElement(s[i])){
-			if (s[i] == '.' && !hasDecimalPoint){
-				hasDecimalPoint = true;
-			}else{
-				r = false;
-				break;
-			}
+	if (!allowDecimalPoint){
+		hasDecimalPoint = true; // just a hack that makes it return false on "seeing" decimal point
+	}
+	foreach (c; s){
+		if (c == '.' && !hasDecimalPoint){
+			hasDecimalPoint = true;
+		}else if (!"0123456789".hasElement(c)){
+			return false;
 		}
 	}
-	return r;
+	return true;
 }
 ///
 unittest{
@@ -212,6 +211,8 @@ unittest{
 	assert("32.2.4".isNum == false);
 	assert("5.a".isNum == false);
 	assert("thisIsAVar_1234".isNum == false);
+	assert("5.3".isNum(false) == false);
+	assert("53".isNum(false) == true);
 }
 
 /// Returns a string with all uppercase alphabets converted into lowercase
