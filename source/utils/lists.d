@@ -1100,7 +1100,7 @@ struct TreeReader(T){
 			// "send" this node
 			func(currentNode);
 			// and have to send their childNodes too
-			foreach (childPtr; currentNode.childNodes){
+			foreach (childPtr; (*currentNode).childNodes){
 				nodes.push(childPtr);
 			}
 		}
@@ -1123,7 +1123,7 @@ struct TreeReader(T){
 			// "send" this node
 			func(currentNode);
 			// and have to send their childNodes too
-			foreach (childPtr; currentNode.childNodes){
+			foreach (childPtr; (*currentNode).childNodes){
 				nodes.push(childPtr);
 			}
 		}
@@ -1154,5 +1154,7 @@ unittest{
 	// make sure each number was iterated
 	assert ([0,1,2,3,4,5,6].matchElements(iteratedNodes), "TreeReader.iterate did not iterate through all nodes");
 	/// now test count
-	
+	assert (tree.count == 7, "TreeReader.count returned invalid count");
+	/// thats all unit tests for now, so destroy all nodes now
+	tree.clear;
 }
