@@ -1037,21 +1037,28 @@ struct TreeNode(T){
 	}
 }
 /// To make reading a Tree (made up of TreeNode) a bit easier
+/// 
+/// and while using it, make sure you do not make a loop in TreeNodes by putting a parent or parent's parent in a node's childNodes,
+/// doing so will cause an infinite loop, TreeReader cannot currently handle this
 struct TreeReader(T){
 	/// the root node
 	TreeNode!(T)* root;
-	/// clears all data from the list
-	///
-	/// all nodes are destroyed, except for the root node
-	void reset(){
-		root.childNodes = []; // idk if this is how to do it, or should I iterate and .destroy each one
+	/// .destroy()s children of the root, including children of children and so on, the root is also .destroy-ed
+	void clear(){
+		/// called by iterate to destroy a node
+		static bool destroyNode(TreeNode!(T)* node){
+			.destroy(*node);
+			return true;
+		}
+		// start killing every node
+		this.iterate(&destroyNode);
 	}
 	/// counts and returns number of nodes in the tree
 	uinteger count(){
 		// stores the count
 		uinteger r = 0;
 		/// used to "receive" nodes from iterate
-		bool increaseCount(TreeNode!T node){
+		bool increaseCount(TreeNode!(T)* node){
 			r ++;
 			return true;
 		}
@@ -1062,11 +1069,11 @@ struct TreeReader(T){
 	/// counts and returns number of nodes in the tree
 	/// 
 	/// if `doCount` is not null, only nodes for which `doCount` function returns true will be counted
-	uinteger count(bool function(TreeNode!T) doCount=null){
+	uinteger count(bool function(TreeNode!(T)*) doCount=null){
 		/// stores the count
 		uinteger r = 0;
 		/// used to "receive" nodes from iterate
-		bool increaseCount(TreeNode!T node){
+		bool increaseCount(TreeNode!(T)* node){
 			if (doCount !is null && (*doCount)(node)){
 				r ++;
 			}
@@ -1079,7 +1086,7 @@ struct TreeReader(T){
 	/// calls a function on every node
 	///
 	/// loop is terminated as soon as false is returned from function
-	void iterate(bool function(TreeNode!T) func){
+	void iterate(bool function(TreeNode!(T)*) func){
 		if (func is null){
 			throw new Exception ("func cannot be null in iterate");
 		}
@@ -1091,7 +1098,7 @@ struct TreeReader(T){
 			/// the node whose childs are being currently being "sent":
 			TreeNode!(T)* currentNode = nodes.pop;
 			// "send" this node
-			func(*currentNode);
+			func(currentNode);
 			// and have to send their childNodes too
 			foreach (childPtr; currentNode.childNodes){
 				nodes.push(childPtr);
@@ -1102,7 +1109,7 @@ struct TreeReader(T){
 	/// calls a delegate on every node
 	///
 	/// loop is terminated as soon as false is returned from function
-	void iterate(bool delegate(TreeNode!T) func){
+	void iterate(bool delegate(TreeNode!(T)*) func){
 		if (func is null){
 			throw new Exception ("func cannot be null in iterate");
 		}
@@ -1114,7 +1121,7 @@ struct TreeReader(T){
 			/// the node whose childs are being currently being "sent":
 			TreeNode!(T)* currentNode = nodes.pop;
 			// "send" this node
-			func(*currentNode);
+			func(currentNode);
 			// and have to send their childNodes too
 			foreach (childPtr; currentNode.childNodes){
 				nodes.push(childPtr);
@@ -1143,7 +1150,9 @@ unittest{
 	tree.root = &rootNode;
 	// check if iterate's working
 	int[] iteratedNodes;
-	tree.iterate((TreeNode!int node){iteratedNodes ~= node.data; return true;});
+	tree.iterate((TreeNode!(int)* node){iteratedNodes ~= (*node).data; return true;});
 	// make sure each number was iterated
-	assert ([0,1,2,3,4,5,6].matchElements(iteratedNodes), "TreeNode.iterate did not iterate through all nodes");
+	assert ([0,1,2,3,4,5,6].matchElements(iteratedNodes), "TreeReader.iterate did not iterate through all nodes");
+	/// now test count
+	
 }
