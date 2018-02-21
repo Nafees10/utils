@@ -434,7 +434,7 @@ public:
 			}
 			// if the last-read is pointing to first item, null it
 			if (lastReadPtr is first){
-				lastItemPtr = null;
+				lastReadPtr = null;
 			}
 			//free memory occupied by first
 			destroy(*first);
