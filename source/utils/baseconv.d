@@ -7,7 +7,7 @@ module utils.baseconv;
 import utils.misc;
 import std.math;
 
-private uinteger toDenary(ushort fromBase, ubyte[] dat){
+uinteger toDenary(ushort fromBase, ubyte[] dat){
 	uinteger r = 0, i = 0;
 	foreach_reverse(cur; dat){
 		r += pow(fromBase,i)*cur;
@@ -20,7 +20,7 @@ unittest{
 	assert(toDenary(2, [1, 0, 0, 1]) == 9);
 }
 
-private ubyte[] fromDenary(ushort toBase, uinteger dat){
+ubyte[] fromDenary(ushort toBase, uinteger dat){
 	ubyte rem;
 	ubyte[] r;
 	while (dat>0){
