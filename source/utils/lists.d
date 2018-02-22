@@ -494,12 +494,12 @@ public:
 
 				}
 			}
-		}
-		//decrease count
-		if (r){
-			itemCount --;
-			//since the last-read has been removed, null that pointer, to prevent segFault
-			lastReadPtr = null;
+			//decrease count
+			if (r){
+				itemCount --;
+				//since the last-read has been removed, null that pointer, to prevent segFault
+				lastReadPtr = null;
+			}
 		}
 		return r;
 	}
