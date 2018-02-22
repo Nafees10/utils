@@ -500,8 +500,75 @@ public:
 			itemCount --;
 			//since the last-read has been removed, null that pointer, to prevent segFault
 			lastReadPtr = null;
-
 		}
+		return r;
+	}
+	/// finds an element, if found, deletes it
+	/// 
+	/// any function that works based on last-item-read should not be called while this is running, like in another thread...
+	/// 
+	/// `toRemove` is the data to search for and delete
+	/// `count` is the number of times to search for it and delete it again. if 0, every element which is `==toRemove` is deleted
+	/// Returns: true if was found and deleted, false if not found
+	/// Throws: Exception if failed to delete an element
+	bool remove(T toRemove, uinteger count=0){
+		LinkedItem!(T)* ptr = firstItemPtr, prev = null;
+		bool r = false;
+		uinteger removedCount = 0;
+		// I'll just use a "hack" and use removeLastRead to remove it
+		LinkedItem!(T)* actualLastRead = lastReadPtr;
+		while (ptr && ( (count > 0 && removedCount < count) || count == 0 )){
+			LinkedItem!(T)* next = (*ptr).next;
+			if ((*ptr).data == toRemove){
+				lastReadPtr = ptr;
+				r = this.removeLastRead();
+				removedCount ++;
+				if (!r){
+					throw new Exception("Failed to delete element in LinkedList->remove->removeLastRead");
+				}
+				ptr = prev;
+				if (!ptr){
+					ptr = firstItemPtr;
+				}
+				continue;
+			}
+			prev = ptr;
+			ptr = ptr.next;
+		}
+		lastReadPtr = actualLastRead;
+		return r;
+	}
+	/// searches the whole list, and any element that matches with elements in the array are deleted
+	/// 
+	/// any function that works based on last-item-read should not be called while this is running, like in another thread...
+	///
+	/// `toRemove` is the array containing the elements to delete
+	/// Returns: true on success, false if no elements matched
+	/// Throws: Exception if failed to delete an element
+	bool remove(T[] toRemove){
+		LinkedItem!(T)* ptr = firstItemPtr, prev = null;
+		bool r = false;
+		uinteger removedCount = 0;
+		// I'll just use a "hack" and use removeLastRead to remove it
+		LinkedItem!(T)* actualLastRead = lastReadPtr;
+		while (ptr){
+			LinkedItem!(T)* next = (*ptr).next;
+			if (toRemove.hasElement((*ptr).data)){
+				lastReadPtr = ptr;
+				r = this.removeLastRead();
+				if (!r){
+					throw new Exception("Failed to delete element in LinkedList->remove->removeLastRead");
+				}
+				ptr = prev;
+				if (!ptr){
+					ptr = firstItemPtr;
+				}
+				continue;
+			}
+			prev = ptr;
+			ptr = ptr.next;
+		}
+		lastReadPtr = actualLastRead;
 		return r;
 	}
 	///number of items that the list is holding
@@ -712,6 +779,7 @@ public:
 }
 /// Unittests for `utils.lists.LinkedList`
 unittest{
+	import std.conv : to;
 	LinkedList!ubyte list = new LinkedList!ubyte;
 	//`LinkedList.append` and `LinkedList.read` and `LinkedList.readFirst` and `LinkedList.readLast` and `LinkedList.resetRead`
 	list.append(0);
@@ -807,6 +875,15 @@ unittest{
 		assert(*list.read == 3);
 		assert(list.removeBookmark(id) == true);
 	}
+	// now to test LinkedList.remove
+	list.clear;
+	list.append([0,0,1,1,2,3,3,4,5,6,0,0]);
+	assert(list.remove(0,2) == true);
+	assert(list.toArray == [1,1,2,3,3,4,5,6,0,0], to!string(list.toArray));
+	assert(list.remove(0) == true);
+	assert(list.toArray == [1,1,2,3,3,4,5,6]);
+	assert(list.remove([1,3]) == true);
+	assert(list.toArray == [2,4,5,6]);
 	destroy(list);
 }
 
