@@ -180,6 +180,33 @@ unittest{
 	assert([1, 2, 3, 4].reverseArray == [4, 3, 2, 1]);
 }
 
+/// tries to divide an array into equal parts
+T[][] divideArray(T)(T[] array, uinteger divBy){
+	array = array.dup;
+	T[][] r;
+	r.length = divBy;
+	uinteger elementCount = array.length / divBy;
+	foreach (i, element; r){
+		if (elementCount > array.length){
+			break;
+		}
+		r[i] = array[0 .. elementCount].dup;
+		array = array[elementCount .. array.length];
+	}
+	// check if there's some elements left, append them to ends if they are
+	foreach (i, element; array){
+		r[i] = r[i] ~ element;
+	}
+	return r;
+}
+/// unittests
+unittest{
+	import std.conv : to;
+	assert ([0,1,2,3,4,5].divideArray(2) == [[0,1,2],[3,4,5]]);
+	assert ([0,1,2,3,4,5,6,7].divideArray(3) == [[0,1,6],[2,3,7],[4,5]]);
+	assert ([0,1].divideArray(3) == [[0],[1],[]]);
+}
+
 /// Returns true if a string is a number, with a decimal point, or without
 bool isNum(string s, bool allowDecimalPoint=true){
 	uinteger i;
