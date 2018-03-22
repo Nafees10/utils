@@ -329,6 +329,148 @@ unittest{
 	stack.destroy;
 }
 
+/// A FIFO (First In is First Out, first element pushed will be removed first) stack
+class FIFOStack(T){
+private:
+	/// to store data in a linked manner
+	struct StackElement(T){
+		T data; /// the data stored
+		StackElement!(T)* next = null; /// pointer to data which was pushed after it
+	}
+	/// pointer to first item (first pushed, the one to pop next)
+	StackElement!(T)* firstItemPtr;
+	/// pointer to last item (last pushed)
+	StackElement!(T)* lastItemPtr;
+	/// stores number of elements pushed
+	uinteger _count;
+public:
+	/// constructor
+	this (){
+		firstItemPtr = null;
+		lastItemPtr = null;
+		_count = 0;
+	}
+	/// destructor
+	this (){
+		// clear the whole stack
+		clear;
+	}
+	/// clears the whole stack
+	void clear(){
+		for (StackElement!(T)* i = firstItemPtr, next = null; i !is null; i = next){
+			next = (*i).next;
+			.destroy(*i);
+		}
+		_count = 0;
+	}
+	/// returns number of items in stack
+	@property uinteger count(){
+		return _count;
+	}
+	/// pushes an element to the top of stack
+	void push(T element){
+		StackElement!(T)* toPush = new StackElement!(T);
+		(*toPush).data = element;
+		(*toPush).next = null;
+		// check if stack is empty
+		if (lastItemPtr is null){
+			firstItemPtr = toPush;
+		}else{
+			(*lastItemPtr).next = toPush;
+		}
+		lastItemPtr = toPush;
+		_count ++;
+	}
+	/// pushes an array of elements to stack
+	void push(T[] elements){
+		StackElement!(T)*[] toPush;
+		toPush.length = elements.length;
+		if (toPush.length > 0){
+			// make a linked stack for just these elements first
+			foreach (i, element; elements){
+				toPush[i] = new StackElement!(T);
+				(*toPush[i]).data = element;
+				if (i > 0){
+					(*toPush[i-1]).next = toPush[i];
+				}
+			}
+			(*toPush[toPush.length-1]).next = null;
+			// now "insert" it
+			if (lastItemPtr is null){
+				firstItemPtr = toPush[0];
+			}else{
+				(*lastItemPtr).next = toPush[0];
+			}
+			lastItemPtr = toPush[toPush.length-1];
+			_count += elements.length;
+		}
+	}
+	/// pops/reads-and-removes a single element from bottom of stack
+	/// Returns: the element pop-ed
+	/// Throws: Exception if the stack is empty
+	T pop(){
+		if (firstItemPtr is null){
+			throw new Exception("Cannot pop from empty stack");
+		}
+		T r = (*firstItemPtr).data;
+		StackElement!(T)* toDestroy = firstItemPtr;
+		firstItemPtr = (*firstItemPtr).next;
+		.destroy(toDestroy);
+		_count --;
+		// check if list is now empty
+		if (firstItemPtr is null){
+			lastItemPtr = null;
+		}
+		return r;
+	}
+	/// pops/reads-and-removes a number of elements from bottom of stack
+	/// Returns: the elements pop-ed in an array, if total number of elements in stack was less than popCount, all elements
+	/// are pop-ed
+	/// Throws: Exception if stack is empty
+	T[] pop(uinteger popCount){
+		if (count == 0){
+			throw new Exception("Cannot pop from empty stack");
+		}
+		if (_count < popCount){
+			popCount = _count;
+		}
+		uinteger i = 0;
+		StackElement!(T)* item = firstItemPtr;
+		T[] r;
+		r.length = popCount;
+		while (i < popCount && item !is null){
+			StackElement!(T)* toDestroy = item;
+			r[i] = (*item).data;
+			item = (*item).next;
+			.destroy(toDestroy);
+			i ++;
+		}
+		firstItemPtr = item;
+		_count -= popCount;
+		// check if list is empty now
+		if (firstItemPtr is null){
+			lastItemPtr = null;
+		}
+		return r;
+	}
+}
+/// unittests for FIFOStack
+unittest{
+	FIFOStack!int stack = new FIFOStack!int;
+	stack.push(0);
+	stack.push([1,2,3,4]);
+	assert(stack.count == 5);
+	assert(stack.pop == 0);
+	assert(stack.count == 4);
+	assert(stack.pop(2) == [1,2]);
+	assert(stack.count == 2);
+	assert(stack.pop(2) == [3,4]);
+	assert(stack.count == 0);
+	stack.push([0,1,2]);
+	assert(stack.count == 3);
+	assert(stack.pop(3) == [0,1,2]);
+}
+
 /// A linked list, used where only reading in the forward direction is required
 class LinkedList(T){
 private:
@@ -630,7 +772,7 @@ public:
 	/// Inserts a node after the position of last-read-node
 	/// To insert at beginning, call `resetRead` before inserting
 	/// 
-	/// For inserting more than one nodes, use `LinkedList.insertNodes`
+	/// For inserting more than one nodes, use `LinkedList.insert([...])`
 	void insert(T node){
 		LinkedItem!(T)* newNode = new LinkedItem!T;
 		(*newNode).data = node;
