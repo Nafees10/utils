@@ -1083,152 +1083,70 @@ public:
 	}
 }
 
-/// For reading files. Can also be used for writing
+/// For reading large files which otherwise, would take too much memory
+/// 
+/// Aside from reading, it can also write to files.
 class FileReader{
 private:
-	ubyte[] stream = null;
-	uinteger seekPos = 0;
+	File file; /// the file currently loaded
+	string _filename; /// the filename of the file opened
 public:
-	/// If filename is not null, attempts to load file into memory
-	this(string filename=null){
-		if (filename != null){
-			this.loadFile(filename);
-		}
+	/// prepares a file for reading/writing through this class
+	///
+	/// if filename does not exists, attempts to create it
+	/// 
+	/// Throws: Exception (ErrnoException) if some error occurs
+	this(string filename){
+		file = File (filename, filename.exists ? "r+" : "w+");
 	}
+	/// destructor
 	~this(){
-		// destructor, nothing to do yet
+		file.close();
 	}
-	/// loads file into memory, throws exception if fails
-	void loadFile(string filename){
-		stream = cast(ubyte[])std.file.read(filename);
-		seekPos = 0;
+	/// reads a number of bytes
+	/// 
+	/// Returns: the bytes read. If there were not enough bytes left to read in the file, an array of smaller size is returned
+	///
+	/// Throws: Exception (ErrnoException) in case of an error
+	ubyte[] read (uinteger n){
+		ubyte[] buffer;
+		// calculate how many bytes will actually be read
+		buffer.length = this.size - this.seek > n ? n : this.size - this.seek;
+		file.rawRead(buffer);
+		return buffer;
 	}
-	/// Writes the stream to a file, throws exception if fails
-	void saveFile(string filename){
-		std.file.write(filename, cast(void[])stream.dup);
-	}
-
-	/// reads and returns `size` number of bytes from file starting from seek-position
-	/// If not enough bytes are left, the array returned will be smaller than `size`
-	/// Returns null if the seek-position is at end, or if there are no bytes to be read
-	void[] read(uinteger size=1){
-		// check if `size` number of chars are left
-		if (size + seekPos <= stream.length){
-			void[] r = stream[seekPos .. seekPos+size].dup;
-			seekPos += size;
-			return r;
-		}else if (seekPos < stream.length){
-			void[] r = stream[seekPos .. stream.length].dup;
-			seekPos = stream.length;
-			return r;
-		}else{
-			// nothing left to read, return null
-			return null;
-		}
-	}
-	/// Reads and returns bytes starting from seek till `terminate` byte, or if EOF is reached
-	void[] read(ubyte terminate){
-		uinteger readFrom = seekPos;
-		while (seekPos < stream.length){
-			if (stream[seekPos] == terminate){
-				seekPos ++;// to include the terminate byte in result
+	/// reads till a specific byte is reached, or eof is reached
+	///
+	/// Returns: the bytes read including the terminating byte
+	///
+	/// Throws: Exception (ErrnoException) in case of an error
+	ubyte[] read (ubyte terminateByte){
+		ubyte[] r;
+		while (this.seek < this.size){
+			ubyte[1] currentByte;
+			file.rawRead(currentByte);
+			r ~= currentByte[0];
+			if (currentByte[0] == terminateByte){
 				break;
 			}
-			seekPos ++;
 		}
-		return stream[readFrom .. seekPos].dup;
+		return r;
 	}
-	/// Writes an array at the seek-position, and moves seek to end of the written data
-	void write(ubyte[] t){
-		if (seekPos > stream.length){
-			throw new Exception("failed to write data to stream. Seek is out of stream.length");
-		}else if (seekPos == stream.length){
-			// just append to end of stream
-			stream = stream ~ t.dup;
-			seekPos = stream.length;
-		}else{
-			// insert it in the middle
-			stream = stream[0 .. seekPos] ~ t ~ stream[seekPos .. stream.length];
-			seekPos += t.length;
-		}
+	/// writes some bytes
+	///
+	/// Throws: Exception (ErrnoException) in case of an error
+	void write (ubyte[] buffer){
+		if (buffer.length != 0)
+			file.rawWrite(buffer);
 	}
-	/// Writes a byte at the seek-position, and moves seek to end of the written data
-	void write(ubyte t){
-		write([t]);
+	/// Returns: from where the next byte will be read (seek)
+	ulong seek (){
+		return file.tell();
 	}
-	/// Removes a number of bytes starting from the seek-position
-	/// 
-	/// Returns true if it was able to remove some bytes, false if not
-	bool remove(uinteger count = 1){
-		// make sure there are enough bytes to remove
-		if (seekPos + count > stream.length){
-			// remove as much as possible
-			if (seekPos >= stream.length){
-				return false;
-			}else{
-				stream = stream[0 .. seekPos-1];
-			}
-		}else{
-			stream = stream[0 .. seekPos-1] ~ stream[seekPos + count .. stream.length];
-		}
-		return true;
+	/// Returns: number of bytes in file
+	ulong size (){
+		return file.size();
 	}
-	/// Clears the stream, resets the stream
-	void clear(){
-		stream.length = 0;
-		seekPos = 0;
-	}
-	/// The seek position, from where the next char(s) will be read, or written to
-	@property uinteger seek(){
-		return seekPos;
-	}
-	/// The seek position, from where the next char(s) will be read, or written to
-	@property uinteger seek(uinteger newSeek){
-		if (newSeek > stream.length){
-			return seekPos = stream.length;
-		}else{
-			return seekPos = newSeek;
-		}
-	}
-	/// The size of file in bytes, read-only
-	@property uinteger size(){
-		return stream.length;
-	}
-}
-/// unittests for FileReader
-unittest{
-	// file loading/ saving not tested
-	FileReader stream = new FileReader();
-	assert(stream.seek == 0);
-	// write & read
-	stream.write(cast(ubyte[])"ABCE");
-	assert(stream.seek == 4);
-	assert(stream.size == 4);
-	stream.seek = 3;
-	stream.write(cast(ubyte)'D');
-	assert(stream.size == 5);
-	assert(stream.seek == 4);
-	stream.seek = 0;
-	assert(stream.read(stream.size) == cast(ubyte[])"ABCDE");
-	stream.seek = 0;
-	assert(stream.read(cast(ubyte)'C') == cast(ubyte[])"ABC");
-	stream.seek = 0;
-	assert(stream.read(cast(ubyte)'Z') == cast(ubyte[])"ABCDE");
-	// clear
-	stream.clear;
-	assert(stream.size == 0);
-	assert(stream.seek == 0);
-	// remove
-	stream.write(cast(ubyte[])"ABCDE");
-	stream.seek = 3;
-	assert(stream.remove(99) == true);
-	stream.seek = 0;
-	assert(stream.read(cast(ubyte)'Z') == cast(ubyte[])"AB");
-	stream.write(cast(ubyte[])"CDE");
-	stream.seek = 1;
-	assert(stream.remove(2) == true);
-	stream.seek = 0;
-	assert(stream.read(cast(ubyte)'Z') == "DE");
 }
 
 /// used by Tree class to hold individual nodes in the tree
