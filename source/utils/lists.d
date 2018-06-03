@@ -1098,6 +1098,7 @@ public:
 	/// Throws: Exception (ErrnoException) if some error occurs
 	this(string filename){
 		file = File (filename, filename.exists ? "r+" : "w+");
+		_filename = filename;
 	}
 	/// destructor
 	~this(){
@@ -1125,7 +1126,7 @@ public:
 		while (this.seek < this.size){
 			ubyte[1] currentByte;
 			file.rawRead(currentByte);
-			r ~= currentByte[0];
+			r = r ~ currentByte[0];
 			if (currentByte[0] == terminateByte){
 				break;
 			}
@@ -1136,8 +1137,7 @@ public:
 	///
 	/// Throws: Exception (ErrnoException) in case of an error
 	void write (ubyte[] buffer){
-		if (buffer.length != 0)
-			file.rawWrite(buffer);
+		file.rawWrite(buffer);
 	}
 	/// from where the next byte will be read/write
 	@property ulong seek (){
@@ -1148,10 +1148,55 @@ public:
 		file.seek (newSeek, SEEK_SET);
 		return file.tell();
 	}
-	/// Returns: number of bytes in file
+	/// number of bytes in file
 	@property ulong size (){
 		return file.size();
 	}
+	/// the filename currently being read/written
+	@property string filename (){
+		return _filename;
+	}
+}
+/// unittests for FileReader
+unittest{
+	import std.path : dirSeparator;
+	import std.conv : to;
+	// delete the file if it already exists, so it wont mess up the tests
+	string fname = tempDir ~ dirSeparator ~ "utilsfilereader";
+	if (fname.exists){
+		remove (fname);
+	}
+	FileReader fread = new FileReader(fname);
+	assert (fread.seek == 0, "seek is not zero at file open");
+	assert (fread.size == 0, "size is not zero for newly created file");
+	assert (fread.filename == fname, "filename is not "~fname);
+	// first fill it with some data
+	fread.write ([1,3,4,5,6,7,8,0,8,7,6,5,4,3,2,1]);
+	assert (fread.seek == 16);
+	assert (fread.size == 16);
+	fread.seek = 1;
+	fread.write ([2]);
+	assert (fread.seek == 2);
+	assert (fread.size == 16);
+	// close it, and see if opening existing files works
+	.destroy (fread);
+	fread = new FileReader(fname);
+	assert (fread.size == 16);
+	assert (fread.filename == fname);
+	assert (fread.seek == 0);
+	/// test read-until-terminator
+	assert (fread.read(cast(ubyte)0) == [1,2,4,5,6,7,8,0]);
+	assert (fread.seek == 8);
+	/// test read-number of bytes
+	assert (fread.read(cast(uinteger)5) == [8,7,6,5,4]);
+	assert (fread.seek == 13);
+	assert (fread.read(999) == [3,2,1]);
+	/// test move-seek and read
+	fread.seek = 2;
+	assert (fread.read(cast(ubyte)0) == [4,5,6,7,8,0]);
+	/// close it
+	.destroy (fread);
+	remove (fname);
 }
 
 /// used by Tree class to hold individual nodes in the tree
