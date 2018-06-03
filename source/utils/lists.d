@@ -1115,7 +1115,7 @@ public:
 		file.rawRead(buffer);
 		return buffer;
 	}
-	/// reads till a specific byte is reached, or eof is reached
+	/// reads till a specific byte is reached, or if eof is reached
 	///
 	/// Returns: the bytes read including the terminating byte
 	///
@@ -1139,12 +1139,17 @@ public:
 		if (buffer.length != 0)
 			file.rawWrite(buffer);
 	}
-	/// Returns: from where the next byte will be read (seek)
-	ulong seek (){
+	/// from where the next byte will be read/write
+	@property ulong seek (){
+		return file.tell();
+	}
+	/// from where the next byte will be read/write
+	@property ulong seek (ulong newSeek){
+		file.seek (newSeek, SEEK_SET);
 		return file.tell();
 	}
 	/// Returns: number of bytes in file
-	ulong size (){
+	@property ulong size (){
 		return file.size();
 	}
 }
