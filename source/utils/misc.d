@@ -46,6 +46,67 @@ void arrayToFile(string[] array, string fname){
 	f.close;
 }
 
+/// Returns: array containing file paths that were modified after given SysTime
+/// 
+/// `filePath` is the path to the dir/file to check
+/// `lastTime` is the time to check against
+/// `exclude` is a lit of files/dirs to not to include in the check
+string[] filesModified(string filePath, SysTime lastTime, string[] exclude = []){
+	import std.algorithm;
+	import std.array;
+	
+	// make sure the filePath is not in exclude
+	if (exclude.indexOf(filePath) >= 0){
+		return [];
+	}
+	if (filePath.isDir){
+		LinkedList!string modifiedList = new LinkedList!string;
+		FIFOStack!string filesToCheck = new FIFOStack!string;
+		filesToCheck.push(listdir(filePath));
+		// go through the stack
+		while (filesToCheck.count > 0){
+			string file = filesToCheck.pop;
+			if (!isAbsolute(file)){
+				file = absolutePath(filePath~'/'~file);
+			}
+			if (exclude.indexOf(file) >= 0){
+				continue;
+			}
+			// check if it's a dir, case yes, push it's files too
+			if (file.isDir){
+				filesToCheck.push(listdir(file));
+			}else if (file.isFile){
+				// is file, check if it was modified
+				if (timeLastModified(file) > lastTime){
+					modifiedList.append(absolutePath(file));
+				}
+			}
+		}
+		string[] r = modifiedList.toArray;
+		.destroy (modifiedList);
+		.destroy (filesToCheck);
+		return r;
+	}else{
+		if (timeLastModified(filePath) > lastTime){
+			return [filePath];
+		}
+	}
+	return [];
+}
+
+/// Returns: an array containing files/dirs in a dir (pathname)
+///
+/// only dirs, and files are returned, symlinks are ignored
+string[] listdir(string pathname){
+	import std.algorithm;
+	import std.array;
+
+	return std.file.dirEntries(pathname, SpanMode.shallow)
+		.filter!(a => (a.isFile || a.isDir))
+		.map!(a => std.path.absolutePath(a.name))
+		.array;
+}
+
 /// Returns true if an aray has an element, false if no
 bool hasElement(T)(T[] array, T element){
 	bool r = false;
