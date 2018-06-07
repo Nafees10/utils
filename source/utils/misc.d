@@ -11,8 +11,13 @@ alias integer = ptrdiff_t;
 ///`uinteger` is a `ulong` on 64 bit systems, and `uint` on 32 bit systems
 alias uinteger = size_t;
 
-///Reads a file into an array of string
-///Throws exception on failure
+/// Reads a file into array of string
+///
+/// each element in the returned array is a separate line, excluding the trailing `\n` character
+/// 
+/// Returns: the lines read from file in array of string
+/// 
+/// Throws: Exception on failure
 string[] fileToArray(string fname){
 	File f = File(fname,"r");
 	string[] r;
@@ -36,7 +41,10 @@ string[] fileToArray(string fname){
 }
 
 /// Writes an array of string to a file
-/// Throws exception on failure
+/// 
+/// If a file already exists, it will be overwritten, and `\n` is added at end of each string
+/// 
+/// Throws: exception on failure
 void arrayToFile(string[] array, string fname){
 	File f = File(fname,"w");
 	uinteger i;
@@ -46,11 +54,16 @@ void arrayToFile(string[] array, string fname){
 	f.close;
 }
 
-/// Returns: array containing file paths that were modified after given SysTime
+/// uses `listdir` to list files/dirs in a dir, and filters the ones that were modified after a given time
 /// 
-/// `filePath` is the path to the dir/file to check
-/// `lastTime` is the time to check against
-/// `exclude` is a lit of files/dirs to not to include in the check
+/// if the provided dir has subdirs, those are also checked, and so on
+///
+/// Arguments:
+/// `filePath` is the path to the dir/file to check  
+/// `lastTime` is the time to check against  
+/// `exclude` is a list of files/dirs to not to include in the check  
+/// 
+/// Returns: the absolute paths of the files/dirs modified after the time
 string[] filesModified(string filePath, SysTime lastTime, string[] exclude = []){
 	import std.algorithm;
 	import std.array;
@@ -94,9 +107,11 @@ string[] filesModified(string filePath, SysTime lastTime, string[] exclude = [])
 	return [];
 }
 
-/// Returns: an array containing files/dirs in a dir (pathname)
+/// lists the files and dirs inside a dir
 ///
-/// only dirs, and files are returned, symlinks are ignored
+/// only dirs and files are returned, symlinks are ignored
+/// 
+/// Returns: an array containing absolute paths of files/dirs
 string[] listdir(string pathname){
 	import std.algorithm;
 	import std.array;
@@ -107,7 +122,7 @@ string[] listdir(string pathname){
 		.array;
 }
 
-/// Returns true if an aray has an element, false if no
+/// Returns: true if an aray has an element, false if no
 bool hasElement(T)(T[] array, T element){
 	bool r = false;
 	foreach(cur; array){
@@ -123,7 +138,7 @@ unittest{
 	assert([0, 1, 2].hasElement(2) == true);
 	assert([0, 1, 2].hasElement(4) == false);
 }
-/// Returns true if array contains all elements provided in an array, else, false
+/// Returns: true if array contains all elements provided in an array, else, false
 bool hasElement(T)(T[] array, T[] elements){
 	bool r = true;
 	elements = elements.dup;
@@ -145,11 +160,16 @@ unittest{
 	assert([0, 1, 2].hasElement([1, 2]) == true);
 	assert([0, 1, 2].hasElement([2, 4]) == false);
 }
-/// Returns true if all elements in array match with another array's elements.
+/// Checks if all elements present in an array are also present in another array
+/// 
 /// Index, and the number of times the element is present in each array doesn't matter
 /// 
-/// `toMatch` is the array to perform the check on
-/// `elements` is the array containing the elements that will be compared against
+/// 
+/// Arguments:
+/// `toMatch` is the array to perform the check on  
+/// `elements` is the array containing the elements that will be compared against  
+///
+/// Returns: true if all elements present in `toMatch` are also present in `elements`
 bool matchElements(T)(T[] toMatch, T[] elements){
 	bool r = true;
 	foreach(currentToMatch; toMatch){
@@ -166,7 +186,7 @@ unittest{
 	assert("abcd".matchElements("cda") == false);
 }
 
-/// Returns the index of an element in an array, negative one if not found
+/// Returns: the index of an element in an array, negative one if not found
 integer indexOf(T)(T[] array, T element){
 	integer i;
 	for (i = 0; i < array.length; i++){
@@ -186,7 +206,11 @@ unittest{
 	assert([0, 1, 2].indexOf(4) == -1);
 }
 
-/// Removes element(s) from an array, and returns the modified array;
+/// Removes a number of elements starting from an index
+/// 
+/// No range checks are done, so an IndexOutOfBounds may occur
+///
+/// Returns: the modified array
 T[] deleteElement(T)(T[] dat, uinteger pos, uinteger count=1){
 	T[] ar1, ar2;
 	ar1 = dat[0..pos];
@@ -199,12 +223,16 @@ unittest{
 	assert([0, 1, 2].deleteElement(0, 2) == [2]);
 }
 
-/// Inserts an array into another array, returns the result;
-T[] insertElement(T)(T[] dat, T[] ins, uinteger pos){
+/// Inserts an array into another array, at a provided index
+/// 
+/// No range checks are done, so an IndexOutOfBounds may occur
+///
+/// Returns: the modified array
+T[] insertElement(T)(T[] dat, T[] toInsert, uinteger pos){
 	T[] ar1, ar2;
 	ar1 = dat[0..pos];
 	ar2 = dat[pos..dat.length];
-	return ar1~ins~ar2;
+	return ar1~toInsert~ar2;
 }
 ///
 unittest{
@@ -212,11 +240,15 @@ unittest{
 	assert([2].insertElement([0, 1], 0) == [0, 1, 2]);
 }
 /// Inserts an element into an array
-T[] insertElement(T)(T[] dat, T ins, uinteger pos){
+/// 
+/// No range checks are done, so an IndexOutOfBounds may occur
+///
+/// Returns: the modified array
+T[] insertElement(T)(T[] dat, T toInsert, uinteger pos){
 	T[] ar1, ar2;
 	ar1 = dat[0..pos];
 	ar2 = dat[pos..dat.length];
-	return ar1~[ins]~ar2;
+	return ar1~[toInsert]~ar2;
 }
 ///
 unittest{
@@ -224,7 +256,7 @@ unittest{
 	assert([2].insertElement(1, 0) == [1, 2]);
 }
 
-/// returns the reverse of an array
+/// returns: the reverse of an array
 T[] reverseArray(T)(T[] s){
 	integer i, writePos = 0;
 	T[] r;
@@ -241,7 +273,11 @@ unittest{
 	assert([1, 2, 3, 4].reverseArray == [4, 3, 2, 1]);
 }
 
-/// tries to divide an array into equal parts
+/// divides an array into number of arrays while (trying to) keeping their length same
+/// 
+/// In case it's not possible to keep length same, the lengths will vary
+///
+/// Returns: the divided arrays
 T[][] divideArray(T)(T[] array, uinteger divBy){
 	array = array.dup;
 	T[][] r;
@@ -260,7 +296,7 @@ T[][] divideArray(T)(T[] array, uinteger divBy){
 	}
 	return r;
 }
-/// unittests
+///
 unittest{
 	import std.conv : to;
 	assert ([0,1,2,3,4,5].divideArray(2) == [[0,1,2],[3,4,5]]);
@@ -268,7 +304,7 @@ unittest{
 	assert ([0,1].divideArray(3) == [[0],[1],[]]);
 }
 
-/// Returns true if a string is a number, with a decimal point, or without
+/// Returns: true if a string is a number
 bool isNum(string s, bool allowDecimalPoint=true){
 	uinteger i;
 	bool hasDecimalPoint = false;
@@ -295,7 +331,7 @@ unittest{
 	assert("53".isNum(false) == true);
 }
 
-/// Returns a string with all uppercase alphabets converted into lowercase
+/// Returns: a string with all uppercase alphabets converted into lowercase
 string lowercase(string s){
 	static const ubyte diff = 'a' - 'A';
 	char[] r = (cast(char[])s).dup;
@@ -312,7 +348,7 @@ unittest{
 	assert("abYZ".lowercase == "abyz");
 }
 
-/// returns true if all characters in a string are alphabets, uppercase, lowercase, or both
+/// Returns: true if all characters in a string are alphabets, uppercase, lowercase, or both
 bool isAlphabet(string s){
 	uinteger i;
 	bool r=true;
@@ -322,13 +358,6 @@ bool isAlphabet(string s){
 		}
 	}
 	return true;
-	/*for (i=0;i<s.length;i++){
-		if ((s[i] < 'a' || s[i] > 'z') && (s[i]<'A' || s[i] > 'Z')){
-			r = false;
-			break;
-		}
-	}
-	return r;*/
 }
 ///
 unittest{
@@ -339,8 +368,11 @@ unittest{
 
 /// generates a markdown table for some data.
 /// 
+/// Arguments:
 /// `headings` is the headings for each column. Left-to-Right
 /// `data` contains each row's data. All rows must be same length
+/// 
+/// Returns: the markdown, for the table, with each line of markdown as a separate element in the string[]
 string[] makeTable(T)(string[] headings, T[][] data){
 	assert(headings.length > 0, "cannot make table with no headings");
 	assert(data.length > 0, "cannot make table with no data");
