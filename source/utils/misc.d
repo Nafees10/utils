@@ -369,8 +369,8 @@ unittest{
 /// generates a markdown table for some data.
 /// 
 /// Arguments:
-/// `headings` is the headings for each column. Left-to-Right
-/// `data` contains each row's data. All rows must be same length
+/// `headings` is the headings for each column. Left-to-Right  
+/// `data` contains each row's data. All rows must be same length  
 /// 
 /// Returns: the markdown, for the table, with each line of markdown as a separate element in the string[]
 string[] makeTable(T)(string[] headings, T[][] data){

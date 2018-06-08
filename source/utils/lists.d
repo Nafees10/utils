@@ -38,11 +38,14 @@ public:
 	}
 	/// Changes the value of element at an index.
 	/// 
+	/// Arguments:
 	/// `dat` is the new data
 	void set(uinteger index, T dat){
 		list[index]=dat;
 	}
 	/// Removes last elements(s) starting from an index; number of elements to remove is in `count`
+	/// 
+	/// No range checks are done, so IndexOutOfBound might occur
 	void remove(uinteger index, uinteger count=1){
 		integer i;
 		integer till=taken-count;
@@ -52,7 +55,9 @@ public:
 		list.length-=count;
 		taken-=count;
 	}
-	/// Removes last elements(s); number of elements to remove is in `count`
+	/// Removes number of elements from end of list
+	/// 
+	/// No range checks are done, so IndexOutOfBound might occur
 	void removeLast(uinteger count = 1){
 		taken -= count;
 		if (list.length-taken>extraAlloc){
@@ -60,6 +65,8 @@ public:
 		}
 	}
 	/// shrinks the size of the list, removing last elements.
+	/// 
+	/// If the `newSize` is larger than the actual size, it does nothing
 	void shrink(uinteger newSize){
 		if (newSize < taken){
 			list.length=newSize;
@@ -67,6 +74,8 @@ public:
 		}
 	}
 	/// Inserts an array into this list
+	/// 
+	/// No range checks are done, so IndexOutOfBound might occur
 	void insert(uinteger index, T[] dat){
 		integer i;
 		T[] ar,ar2;
@@ -77,6 +86,8 @@ public:
 		taken+=dat.length;
 	}
 	/// Inserts an element into this list
+	/// 
+	/// No range checks are done, so IndexOutOfBound might occur
 	void insert(uinteger index, T dat){
 		integer i;
 		T[] ar,ar2;
@@ -97,36 +108,53 @@ public:
 		f.close;
 	}
 	/// Reads an element at an index
+	/// 
+	/// Returns: the element read
+	/// 
+	/// No range checks are done, so IndexOutOfBound might occur
 	T read(uinteger index){
 		return list[index];
 	}
 	/// Read a slice from the list.
 	/// 
-	/// The slice is copied to avoid data in list from getting changed
+	/// Returns: the elements read
 	T[] readRange(uinteger index,uinteger i2){
 		T[] r;
 		r = list[index .. i2].dup;
 		return r;
 	}
 	/// Reads the last element in list.
+	/// 
+	/// Returns: the last element in list
+	/// 
+	/// Throws: Exception if list length is zero
 	T readLast(){
+		if (taken == 0){
+			throw new Exception ("Cannot readLast when length is zero");
+		}
 		return list[taken-1];
 	}
-	/// returns last elements in list. number of elements to return is specified in `count`
+	/// Reads number of elements from end of list
+	/// 
+	/// No range checks are done, so IndexOutOfBound might occur
+	/// 
+	/// Returns: the elements read
 	T[] readLast(uinteger count){
 		T[] r;
 		r = list[taken-count..taken].dup;
 		return r;
 	}
-	/// length of the list
+	/// Returns: length of the list
 	@property integer length(){
 		return taken;
 	}
 	/// Exports this list into a array
+	/// 
+	/// Returns: the array containing the elements in this list
 	T[] toArray(){
-		return list.dup;
+		return list[0 .. taken].dup;
 	}
-	/// Loads array into this list
+	/// Loads list from an array
 	void loadArray(T[] newList){
 		uinteger i;
 		list = newList.dup;
@@ -137,11 +165,12 @@ public:
 		list = [];
 		taken = 0;
 	}
-	/// Returns index of the first matching element. -1 if not found
+	/// Returns: index of the first matching element. -1 if not found
 	/// 
-	/// `dat` is the element to search for
-	/// `i` is the index from where to start, default is 0
-	/// `forward` if true, searches in a forward direction, from lower index to higher
+	/// Arguments:
+	/// `dat` is the element to search for  
+	/// `i` is the index from where to start, default is 0  
+	/// `forward` if true, searches in a forward direction, from lower index to higher  
 	integer indexOf(bool forward=true)(T dat, integer i=0){
 		static if (forward){
 			for (;i<taken;i++){
@@ -160,7 +189,7 @@ public:
 		return i;
 	}
 }
-/// Unittest for List
+///
 unittest{
 	List!ubyte list = new List!ubyte;
 	//`List.insert` and `List.add` and `List.toArray`
@@ -242,7 +271,11 @@ public:
 		//increase count
 		itemCount += newItems.length;
 	}
-	/// Reads and removes an item from the stack, if no more items are present, throws Exception
+	/// pops an item from stack
+	/// 
+	/// Returns: the item poped
+	/// 
+	/// Throws: Exception if stack is empty
 	T pop(){
 		// make sure its not null
 		if (lastItemPtr !is null){
@@ -259,10 +292,14 @@ public:
 		}
 	}
 	/// Reads and removes an array of items from the stack,
-	/// if not enough items are left, throws Exception
 	/// 
-	/// count is the number of elements to return
-	/// `reverse`, if true, elements are read in reverse, last-pushed is last in array
+	/// Throws: Exception if there are not enough items in stack
+	/// 
+	/// Returns: the items read
+	/// 
+	/// Arguments:
+	/// `count` is the number of elements to return  
+	/// `reverse`, if true, elements are read in reverse, last-pushed is last in array  
 	T[] pop(bool reverse=false)(uinteger count){
 		//make sure there are enough items
 		if (itemCount >= count){
@@ -293,7 +330,7 @@ public:
 			throw new Exception("Not enough items in stack");
 		}
 	}
-	/// Empties the stack
+	/// Empties the stack, pops all items
 	void clear(){
 		// go through all items and delete em
 		stackItem!(T)* ptr;
@@ -311,7 +348,7 @@ public:
 		return itemCount;
 	}
 }
-/// Unittests for Stack
+///
 unittest{
 	Stack!ubyte stack = new Stack!ubyte;
 	//`Stack.push` and `Stack.pop`
@@ -355,7 +392,7 @@ public:
 		// clear the whole stack
 		clear;
 	}
-	/// clears the whole stack
+	/// clears the whole stack, pops all items
 	void clear(){
 		for (StackElement!(T)* i = firstItemPtr, next = null; i !is null; i = next){
 			next = (*i).next;
@@ -363,11 +400,11 @@ public:
 		}
 		_count = 0;
 	}
-	/// returns number of items in stack
+	/// Returns: number of items in stack
 	@property uinteger count(){
 		return _count;
 	}
-	/// pushes an element to the top of stack
+	/// pushes an element to stack
 	void push(T element){
 		StackElement!(T)* toPush = new StackElement!(T);
 		(*toPush).data = element;
@@ -405,8 +442,10 @@ public:
 			_count += elements.length;
 		}
 	}
-	/// pops/reads-and-removes a single element from bottom of stack
+	/// pops an item from the stack (from bottom of stack, since it's a FIFO stack)
+	/// 
 	/// Returns: the element pop-ed
+	/// 
 	/// Throws: Exception if the stack is empty
 	T pop(){
 		if (firstItemPtr is null){
@@ -423,9 +462,12 @@ public:
 		}
 		return r;
 	}
-	/// pops/reads-and-removes a number of elements from bottom of stack
-	/// Returns: the elements pop-ed in an array, if total number of elements in stack was less than popCount, all elements
-	/// are pop-ed
+	/// pops a number of items from the stack (from bottom since it's a FIFO Stack)
+	/// 
+	/// If there aren't enoguh items in stack, all the items are poped, and the returned array's length is less than `popCount`
+	/// 
+	/// Returns: the elements poped
+	/// 
 	/// Throws: Exception if stack is empty
 	T[] pop(uinteger popCount){
 		if (count == 0){
@@ -454,7 +496,7 @@ public:
 		return r;
 	}
 }
-/// unittests for FIFOStack
+///
 unittest{
 	FIFOStack!int stack = new FIFOStack!int;
 	stack.push(0);
@@ -499,7 +541,7 @@ public:
 		//free all the memory occupied
 		clear();
 	}
-	///clears/resets the list. Frees all the occupied memory, & removes all items
+	/// clears/resets the list, by deleting all elements
 	void clear(){
 		//make sure that the list is populated
 		if (firstItemPtr !is null){
@@ -516,7 +558,7 @@ public:
 			itemCount = 0;
 		}
 	}
-	///adds a new node at the end of the list
+	/// adds a new node/element to the end of the list
 	void append(T item){
 		LinkedItem!(T)* ptr = new LinkedItem!(T);
 		(*ptr).data = item;
@@ -533,7 +575,7 @@ public:
 		//increase item count
 		itemCount ++;
 	}
-	///adds new nodes at end of list from an array
+	/// adds new nodes/items at end of list
 	void append(T[] items){
 		if (items.length > 0){
 			LinkedItem!(T)*[] newNodes;
@@ -562,7 +604,9 @@ public:
 			itemCount += newNodes.length;
 		}
 	}
-	///removes the first node in list
+	/// removes the first node in list
+	/// 
+	/// If the list is empty, this function does nothing
 	void removeFirst(){
 		//make sure list is populated
 		if (firstItemPtr !is null){
@@ -584,10 +628,11 @@ public:
 			itemCount --;
 		}
 	}
-	///removes the node that was last read using `LinkedList.read`. The last node cannot be removed using this.
-	///returns true on success
+	/// removes the node that was last read using `LinkedList.read`. The last node cannot be removed using this.
 	///
-	///It works by moving contents of next item into the last-read one, and removing the next node
+	/// It works by moving contents of next item into the last-read one, and removing the next node
+	/// 
+	/// Returns: true in case the node/item was removed, false if not
 	bool removeLastRead(){
 		bool r = false;
 		if (lastReadPtr !is null){
@@ -649,9 +694,12 @@ public:
 	/// 
 	/// any function that works based on last-item-read should not be called while this is running, like in another thread...
 	/// 
-	/// `toRemove` is the data to search for and delete
-	/// `count` is the number of times to search for it and delete it again. if 0, every element which is `==toRemove` is deleted
+	/// Arguments:
+	/// `toRemove` is the data to search for and delete  
+	/// `count` is the number of times to search for it and delete it again. if 0, every element which is `==toRemove` is deleted  
+	/// 
 	/// Returns: true if was found and deleted, false if not found
+	/// 
 	/// Throws: Exception if failed to delete an element
 	bool remove(T toRemove, uinteger count=0){
 		LinkedItem!(T)* ptr = firstItemPtr, prev = null;
@@ -683,9 +731,12 @@ public:
 	/// searches the whole list, and any element that matches with elements in the array are deleted
 	/// 
 	/// any function that works based on last-item-read should not be called while this is running, like in another thread...
-	///
-	/// `toRemove` is the array containing the elements to delete
+	/// 
+	/// Arguments:
+	/// `toRemove` is the array containing the elements to delete  
+	/// 
 	/// Returns: true on success, false if no elements matched
+	/// 
 	/// Throws: Exception if failed to delete an element
 	bool remove(T[] toRemove){
 		LinkedItem!(T)* ptr = firstItemPtr, prev = null;
@@ -713,7 +764,7 @@ public:
 		lastReadPtr = actualLastRead;
 		return r;
 	}
-	///number of items that the list is holding
+	/// Returns: number of items that the list is holding
 	@property uinteger count(){
 		return itemCount;
 	}
@@ -722,7 +773,9 @@ public:
 		nextReadPtr = firstItemPtr;
 		lastReadPtr = null;
 	}
-	///returns pointer of next node to be read, null if there are no more nodes
+	/// Returns: pointer of next node to be read, null if there are no more nodes
+	/// 
+	/// increments the read-position by 1, so next time it's called, the next item is read
 	T* read(){
 		T* r;
 		if (nextReadPtr !is null){
@@ -737,7 +790,7 @@ public:
 		}
 		return r;
 	}
-	/// Returns the pointer to the first node in the list
+	/// Returns: the pointer to the first node in the list
 	T* readFirst(){
 		if (firstItemPtr !is null){
 			lastReadPtr = firstItemPtr;
@@ -746,7 +799,7 @@ public:
 			return null;
 		}
 	}
-	/// Returns the pointer to the last node in the list
+	/// Returns: the pointer to the last node in the list
 	T* readLast(){
 		if (lastItemPtr !is null){
 			lastReadPtr = lastItemPtr;
@@ -755,7 +808,9 @@ public:
 			return null;
 		}
 	}
-	/// Reads the list into an array, and returns the array
+	/// Reads the list into an array
+	/// 
+	/// Returns: the array formed from this list
 	T[] toArray(){
 		LinkedItem!(T)* currentNode = firstItemPtr;
 		uinteger i = 0;
@@ -769,9 +824,9 @@ public:
 		}
 		return r;
 	}
-	/// Inserts a node after the position of last-read-node
-	/// To insert at beginning, call `resetRead` before inserting
+	/// Inserts a node after the position of last-read-node, i.e, to insert at position from where next item is to be read
 	/// 
+	/// To insert at beginning, call `resetRead` before inserting
 	/// For inserting more than one nodes, use `LinkedList.insert([...])`
 	void insert(T node){
 		LinkedItem!(T)* newNode = new LinkedItem!T;
@@ -793,9 +848,11 @@ public:
 		//increase count
 		itemCount ++;
 	}
-	/// Inserts an array of nodes after the position of last-read-node
+	/// Inserts nodes after the position of last-read-node, i.e, to insert at position from where next item is to be read
+	/// 
 	/// If there is no last-read-item, the item is inserted at beginning. To do this, call `resetRead` before inserting
-	/// Returns true on success, false on failure
+	/// 
+	/// Returns: true on success, false on failure
 	void insert(T[] nodes){
 		if (nodes.length > 0){
 			LinkedItem!(T)*[] newNodes;
@@ -827,7 +884,7 @@ public:
 			itemCount += nodes.length;
 		}
 	}
-	/// Returns true if list contains a node, i.e searches for a node and returns true if found
+	/// Returns: true if list contains a node, i.e searches for a node and returns true if found
 	bool hasElement(T node){
 		bool r = false;
 		LinkedItem!(T)* currentNode = firstItemPtr;
@@ -841,9 +898,11 @@ public:
 		}
 		return r;
 	}
-	/// Returns true if list contains all elements provided in an array, else, false
+	/// matches all elements from an array to elements in list, to see if all elements in array are present in the list
+	///  
+	/// If the same element is present at more than one index in array, it won't work
 	/// 
-	/// returns false if the array contains the same elements at more than one index
+	/// Returns: true if list contains all elements provided in an array, else, false
 	bool hasElements(T[] nodes){
 		bool r = false;
 		nodes = nodes.dup;
@@ -869,9 +928,14 @@ public:
 		}
 		return r;
 	}
-	/// Sets a "bookmark", and returns the bookmark-ID, throws Exception if there is no last-read-item to place bookmark on
+	/// Sets a "bookmark"
 	/// 
-	/// this ID can later be used to go back to the reading position at which the bookmark was placed
+	/// the returned ID can later be used to go back to the reading position at which the bookmark was placed  
+	/// and be careful not to remove an item to which bookmark is pointing, because then if you moveToBookmark, it'll segfault.
+	/// 
+	/// Returns: the bookmark-ID
+	/// 
+	/// Throws: Exception if there is no last-read item
 	uinteger placeBookmark(){
 		if (lastReadPtr is null){
 			throw new Exception("no last-read-item to place bookmark on");
@@ -889,10 +953,11 @@ public:
 			return id;
 		}
 	}
-	/// moves read/insert position back to a bookmark using the bookmark ID
+	/// moves read position back to a bookmark using the bookmark ID
+	/// 
 	/// Does NOT delete the bookmark. Use `LinkedList.removeBookmark` to delete
-	/// Retutns true if successful
-	/// false if the bookmark ID no longer exists
+	/// 
+	/// Returns: true if successful, false if the bookmark no longer exists
 	bool moveToBookmark(uinteger id){
 		if (id !in bookmarks){
 			return false;
@@ -902,8 +967,8 @@ public:
 		}
 	}
 	/// removes a bookmark using the bookmark id
-	/// returns true if successful
-	/// false if the bookmark doesn't exist
+	/// 
+	/// Returns: true if bookmark is removed, false if it doesn't exist
 	bool removeBookmark(uinteger id){
 		if (id !in bookmarks){
 			return false;
@@ -919,7 +984,7 @@ public:
 		}
 	}
 }
-/// Unittests for `utils.lists.LinkedList`
+///
 unittest{
 	import std.conv : to;
 	LinkedList!ubyte list = new LinkedList!ubyte;
