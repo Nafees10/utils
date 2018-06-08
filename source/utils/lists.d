@@ -1094,7 +1094,9 @@ unittest{
 	destroy(list);
 }
 
-/// Used in logging widgets. Holds upto certain number of elements, after which older elements are over-written
+/// Used in log display widgets (like in dub package `qui` `qui.widgets.LogWidget`)
+/// 
+/// Holds up to a certain number of items, after which it starts over-writing older ones
 class LogList(T){
 private:
 	List!T list;
@@ -1108,7 +1110,7 @@ public:
 	~this(){
 		delete list;
 	}
-	///adds an item to the log
+	/// adds an item to the log
 	void add(T dat){
 		if (list.length>=maxLen){
 			list.set(readFrom,dat);
@@ -1117,7 +1119,7 @@ public:
 			list.add(dat);
 		}
 	}
-	///Returns array containing items, in first-added-last order
+	/// Returns: array containing items
 	T[] read(uinteger count=0){
 		T[] r;
 		if (count>list.length){
@@ -1137,12 +1139,12 @@ public:
 		}
 		return r;
 	}
-	///resets and clears the log
+	/// resets and clears the log
 	void reset(){
 		list.clear;
 		readFrom = 0;
 	}
-	///returns the max number of items that can be stored
+	/// Returns: the max number of items that can be stored
 	@property uinteger maxCapacity(){
 		return maxLen;
 	}
@@ -1222,7 +1224,7 @@ public:
 		return _filename;
 	}
 }
-/// unittests for FileReader
+///
 unittest{
 	import std.path : dirSeparator;
 	import std.conv : to;
@@ -1306,6 +1308,8 @@ struct TreeReader(T){
 		this.iterate(&destroyNode);
 	}
 	/// counts and returns number of nodes in the tree
+	/// 
+	/// Returns: the number of nodes in the tree, counting all child-nodes and their child-nodes and so on
 	uinteger count(){
 		// stores the count
 		uinteger r = 0;
@@ -1321,6 +1325,8 @@ struct TreeReader(T){
 	/// counts and returns number of nodes in the tree
 	/// 
 	/// if `doCount` is not null, only nodes for which `doCount` function returns true will be counted
+	/// 
+	/// Returns: number of nodes for which `doCount(node)` returned true
 	uinteger count(bool function(TreeNode!(T)*) doCount=null){
 		/// stores the count
 		uinteger r = 0;
@@ -1338,6 +1344,7 @@ struct TreeReader(T){
 	/// calls a function on every node
 	///
 	/// loop is terminated as soon as false is returned from function
+	/// No recursion is used, as it uses a stack to store which nodes it has to call a function on
 	void iterate(bool function(TreeNode!(T)*) func){
 		if (func is null){
 			throw new Exception ("func cannot be null in iterate");
@@ -1361,6 +1368,7 @@ struct TreeReader(T){
 	/// calls a delegate on every node
 	///
 	/// loop is terminated as soon as false is returned from function
+	/// No recursion is used, as it uses a stack to store which nodes it has to call a delegate on
 	void iterate(bool delegate(TreeNode!(T)*) func){
 		if (func is null){
 			throw new Exception ("func cannot be null in iterate");
@@ -1382,7 +1390,7 @@ struct TreeReader(T){
 		.destroy(nodes);
 	}
 }
-/// unittests for TreeReader
+///
 unittest{
 	TreeReader!int tree;
 	// testing iterate
