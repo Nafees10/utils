@@ -4,6 +4,9 @@
 module utils.misc;
 
 import std.stdio;
+import std.file;
+import std.path;
+import utils.lists;
 import std.datetime;
 
 ///`integer is a `long` on 64 bit systems, and `int` on 32 bit systems
