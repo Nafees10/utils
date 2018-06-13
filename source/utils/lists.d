@@ -1156,6 +1156,10 @@ public:
 class FileReader{
 private:
 	File file; /// the file currently loaded
+	bool closeOnDestroy; /// stores if the file will be closed when this object is destroyed
+	uinteger _minSeek; /// stores the minimum value of seek, if zero, it has no effect
+	uinteger _maxSeek; /// stores the maximum value of seek, if zero, it has no effect
+	uinteger _maxSize; /// stores the max size of the file in case _minSeek and _maxSeek are set non-zero
 	string _filename; /// the filename of the file opened
 public:
 	/// prepares a file for reading/writing through this class
@@ -1165,11 +1169,94 @@ public:
 	/// Throws: Exception (ErrnoException) if some error occurs
 	this(string filename){
 		file = File (filename, filename.exists ? "r+" : "w+");
+		closeOnDestroy = true;
 		_filename = filename;
+		_minSeek = 0;
+		_maxSeek = 0;
+	}
+	/// prepares this object for reading/writing an already opened file
+	/// 
+	/// When this constructor is used, file will not be closed when this object is destroyed  
+	/// and keep in mind that modifying the seek of `f` will also modify it in this object, so try not to use `f` outside,  
+	/// or do so with some precaution.
+	this (File f){
+		file = f;
+		closeOnDestroy = false;
+		_minSeek = 0;
+		_maxSeek = 0;
+	}
+	/// prepares this object for reading/writing an already opened file, where the read/write can only take place between a
+	/// certain range. 
+	/// 
+	/// When this constructor is used, file will not be closed when this object is destroyed  
+	/// and keep in mind that modifying the seek of `f` will also modify it in this object, so try not to use `f` outside,  
+	/// or do so with some precaution.  
+	/// The object will treat the File segment as the whole file in the functions:  
+	/// * seek will return relative to minSeek. i.e, if actual seek is `minSeek + 1`, it will return `1`  
+	/// * size will return `(maxSeek - minSeek) + 1` if the actual size is greater than maxSeek, otherwise, it will be `size - maxSeek`  
+	/// * `lock()` (locking whole file) will only lock the segment  
+	/// * `unlock()` (unlocking whole file) will only unlock the segment
+	/// 
+	/// Arguments:
+	/// `f` if the File to do reading/writing on  
+	/// `minSeek` is the index from where reading/writing can begin from.
+	/// `maxSeek` is the index after which no reading writing can be done.
+	this (File f, uinteger minSeek, uinteger maxSeek){
+		file = f;
+		assert (minSeek < maxSeek, "minSeek must be smaller than maxSeek");
+		this._minSeek = minSeek;
+		this._maxSeek = maxSeek;
+		this._maxSize = (maxSeek - minSeek) + 1;
 	}
 	/// destructor
 	~this(){
-		file.close();
+		if (closeOnDestroy)
+			file.close();
+	}
+	/// locks a file segment (readWrite lock)
+	/// 
+	/// Throws: Exception if this FileReader is only for a segment and it tries to access outdside that segment
+	/// 
+	/// Returns: true if lock was successful, false if already locked
+	bool lock(uinteger start, uinteger length){
+		if (_minSeek + _maxSeek > 0){
+			start = start + _minSeek;
+		}
+		// make sure it's not accessing anything outside the segment, if there is a segment limit
+		if (start + length > _maxSeek + 1){
+			throw new Exception ("trying to access outside _maxSeek");
+		}
+		return file.tryLock(LockType.readWrite, start, length);	
+	}
+	/// locks the whole file (readWrite lock)
+	/// 
+	/// Returns: true if lock was successful, false if alrady locked
+	bool lock(){
+		if (_minSeek + _maxSeek == 0){
+			return file.tryLock(LockType.readWrite, 0, 0);
+		}
+		return file.tryLock(LockType.readWrite, _minSeek, _maxSize);
+	}
+	/// unlocks a file segment
+	/// 
+	/// Throws: Exception if this FileReader is only for a segment and it tries to access outdside that segment
+	void unlock (uinteger start, uinteger length){
+		if (_minSeek + _maxSeek > 0){
+			start = start + _minSeek;
+		}
+		// make sure it's not accessing anything outside the segment, if there is a segment limit
+		if (start + length > _maxSeek + 1){
+			throw new Exception ("trying to access outside _maxSeek");
+		}
+		file.unlock (start, length);
+	}
+	/// unlocks the whole file
+	void unlock (){
+		if (_minSeek + _maxSeek == 0){
+			file.unlock (0, file.size);
+		}else if (file.size > 0){
+			file.unlock(_minSeek, _maxSize);
+		}
 	}
 	/// reads a number of bytes
 	/// 
@@ -1178,7 +1265,6 @@ public:
 	/// Throws: Exception (ErrnoException) in case of an error
 	ubyte[] read (uinteger n){
 		ubyte[] buffer;
-		// calculate how many bytes will actually be read
 		buffer.length = this.size - this.seek > n ? n : this.size - this.seek;
 		file.rawRead(buffer);
 		return buffer;
@@ -1204,20 +1290,46 @@ public:
 	///
 	/// Throws: Exception (ErrnoException) in case of an error
 	void write (ubyte[] buffer){
+		// make sure it won't overflow the _maxSeek
+		if (buffer.length + this.seek > _maxSize){
+			buffer = buffer.dup;
+			buffer.length = _maxSize - this.seek;
+		}
 		file.rawWrite(buffer);
 	}
 	/// from where the next byte will be read/write
 	@property ulong seek (){
-		return file.tell();
+		if (_maxSeek + _minSeek == 0){
+			return file.tell();
+		}
+		ulong actualSeek = file.tell();
+		if (actualSeek < _minSeek){
+			this.seek = 0;
+		}else if (actualSeek > _maxSeek){
+			this.seek = _maxSeek;
+		}
+		return file.tell() - _minSeek;
 	}
 	/// from where the next byte will be read/write
 	@property ulong seek (ulong newSeek){
+		if (_maxSeek + _minSeek == 0){
+			file.seek (newSeek, SEEK_SET);
+			return file.tell();
+		}
+		newSeek += _minSeek;
+		if (newSeek > _maxSeek){
+			newSeek = _maxSeek;
+		}
 		file.seek (newSeek, SEEK_SET);
-		return file.tell();
+		return file.tell() - _minSeek;
 	}
 	/// number of bytes in file
 	@property ulong size (){
-		return file.size();
+		ulong actualSize = file.size();// TODO
+		if (actualSize > _maxSize){
+			actualSize = _maxSize;
+		}
+		return actualSize;
 	}
 	/// the filename currently being read/written
 	@property string filename (){
