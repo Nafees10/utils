@@ -23,7 +23,7 @@ public:
 		extraAlloc = extraCount;
 	}
 	/// appends an element to the list
-	void add(T dat){
+	void append(T dat){
 		if (taken==list.length){
 			list.length+=extraAlloc;
 		}
@@ -31,7 +31,7 @@ public:
 		list[taken-1] = dat;
 	}
 	/// appends an array to the list
-	void addArray(T[] dat){
+	void append(T[] dat){
 		list.length = taken;
 		list ~= dat;
 		taken += dat.length;
@@ -43,8 +43,9 @@ public:
 	void set(uinteger index, T dat){
 		list[index]=dat;
 	}
-	/// Removes last elements(s) starting from an index; number of elements to remove is in `count`
+	/// Removes last elements(s) starting from an index
 	/// 
+	/// number of elements to remove is in `count`  
 	/// No range checks are done, so IndexOutOfBound might occur
 	void remove(uinteger index, uinteger count=1){
 		integer i;
@@ -98,7 +99,9 @@ public:
 	}
 	/// Writes the list to a file.
 	/// 
-	/// `sp` is the line separator. In case of strings, you want it to be `"\n"`;
+	/// Arguemnts:
+	/// `s` is the filename
+	/// `sp` is the separator, it will be added to the end of each list-element
 	void saveFile(string s, T sp){
 		File f = File(s,"w");
 		uinteger i;
@@ -118,6 +121,8 @@ public:
 	/// Read a slice from the list.
 	/// 
 	/// Returns: the elements read
+	/// 
+	/// No range checks are done, so IndexOutOfBound might occur
 	T[] readRange(uinteger index,uinteger i2){
 		T[] r;
 		r = list[index .. i2].dup;
@@ -193,8 +198,8 @@ public:
 unittest{
 	List!ubyte list = new List!ubyte;
 	//`List.insert` and `List.add` and `List.toArray`
-	list.add(0);
-	list.add(1);
+	list.append(0);
+	list.append(1);
 	list.insert(1, 2);
 	assert(list.toArray() == [0, 2, 1]);
 	//`List.indexOf`
@@ -207,7 +212,7 @@ unittest{
 	assert(list.length == 4);
 	assert(list.indexOf(3) == 3);
 	//`List.addArray`
-	list.addArray([4, 5, 6, 7, 8]);
+	list.append([4, 5, 6, 7, 8]);
 	assert(list.length == 9);
 	//`List.set` and `List.read`
 	list.set(0, 1);
