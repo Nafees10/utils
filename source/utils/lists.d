@@ -1302,6 +1302,61 @@ public:
 		}
 		file.rawWrite(buffer);
 	}
+	/// Removes a number of bytes from the file, starting at an index.
+	///
+	/// Arguments:
+	/// `index` is index to begin removing from  
+	/// `length` is number of bytes to remove  
+	/// `chunkSize` is the number of bytes to shift in one iteration
+	/// 
+	/// Returns: true if done, false if not, or index was out of bounds
+	bool remove (uinteger index, uinteger length){
+		if (this.size <= index || this.size - index < length)
+			return false;
+		try{
+			for (this.seek = index+length; this.seek < this.size;){
+				ubyte[] toShift = this.read(length);
+				this.seek = this.seek - length;
+				this.write (toShift);
+			}
+			truncate(this.size - length);
+		}catch(Exception e){
+			.destroy (e);
+			return false;
+		}
+		return true;
+	}
+	/// truncates a file, i.e removes last byte(s) from file.
+	/// 
+	/// Does not work if minSeek and/or maxSeek were non-zero.
+	/// 
+	/// TODO: read file `byChunk`, write it to new file, excluding last byte(s), replace old file with newfile; will be faster
+	/// 
+	/// Arguments:
+	/// `newSize` is the new number of bytes in file.  
+	/// `onFailTrySlow` if true, when `SetEndOfFile` or `ftruncate` fails, it'll use a slower method that might work
+	/// 
+	/// Returns: true if file was truncated, false if not, for example if the file size was less than newSize
+	bool truncate(uinteger newSize, bool onFailTrySlow=false){
+		if (_minSeek + _maxSeek != 0 || newSize < this.size){
+			return false;
+		}
+		try{
+			version (Posix){
+				import core.sys.posix.unistd: ftruncate;
+				ftruncate(file.fileno, newSize);
+			}
+			version (Windows){
+				import core.sys.windows.windows: SetEndOfFile;
+				uinteger oldSeek = this.seek;
+				this.seek = newSize-1;
+				SetEndOfFile (file.HANDLE);
+			}
+		}catch (Exception e){
+			return false;
+		}
+		return (file.size == newSize);
+	}
 	/// from where the next byte will be read/write
 	@property ulong seek (){
 		if (_maxSeek + _minSeek == 0){
