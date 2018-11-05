@@ -1351,6 +1351,7 @@ public:
 				uinteger oldSeek = this.seek;
 				this.seek = newSize-1;
 				SetEndOfFile (file.HANDLE);
+				this.seek = oldSeek;
 			}
 		}catch (Exception e){
 			return false;
