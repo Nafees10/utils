@@ -5,6 +5,7 @@ module utils.lists;
 
 import std.file;
 import std.stdio;
+import std.conv : to;
 import utils.misc;
 
 /// Use to manage dynamic arrays that frequently change lengths
@@ -241,7 +242,7 @@ public:
 }
 ///
 unittest{
-	List!ubyte list = new List!ubyte;
+	List!ubyte list = new List!ubyte(4);
 	//`List.insert` and `List.add` and `List.toArray`
 	list.append(0);
 	list.append(1);
@@ -273,6 +274,18 @@ unittest{
 	//`List.removeLast`
 	list.removeLast(2);
 	assert(list.readLast() == 6);
+	//`List.freeSpace`
+	list.clear;
+	foreach (i; cast(ubyte[])[0,1,2])
+		list.append(i);
+	assert(list.freeSpace == 1, to!string(list.freeSpace));
+	list.append(3);
+	assert(list.freeSpace == 0);
+	list.setFreeSpace(6);
+	assert(list.freeSpace == 6 && list.length == 4);
+	list.setFreeSpace(-3);
+	assert(list.freeSpace == 3);
+	assert(list.setFreeSpace(-10) == false);
 
 	destroy(list);
 }
