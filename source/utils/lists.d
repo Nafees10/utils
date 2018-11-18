@@ -70,7 +70,7 @@ public:
 	/// Removes number of elements from end of list
 	/// 
 	/// Returns: true if successful, false if not enough elements to remove
-	void removeLast(uinteger count = 1){
+	bool removeLast(uinteger count = 1){
 		if (count > taken){
 			return false;
 		}
@@ -80,7 +80,7 @@ public:
 	/// shrinks the size of the list, removing last elements.
 	/// 
 	/// Returns: true if shrunk, false if not for example if `newSize` was greater than actual size
-	void shrink(uinteger newSize){
+	bool shrink(uinteger newSize){
 		if (newSize < taken){
 			list.length=newSize;
 			taken = list.length;
@@ -92,14 +92,25 @@ public:
 	@property uinteger freeSpace(){
 		return list.length - taken;
 	}
-	/// makes space for n more elements in list
-	void makeSpace(uinteger n){
-		list.length += n;
+	/// make more free space for new elements, or reduce it. To reduce, use n as negative. To decrease by 2, `n=-2`
+	/// 
+	/// Returns: true if done, false if not done, for example if there wasn't enough free space in list to be removed
+	bool setFreeSpace(integer n){
+		if (n < 0 && -n > list.length - taken){
+			return false;
+		}
+		try{
+			list.length = list.length + n;
+		}catch (Exception e){
+			.destroy (e);
+			return false;
+		}
+		return true;
 	}
 	/// Inserts an array into this list
 	/// 
 	/// Returns: true if done, false if index out of bounds, or not done
-	void insert(uinteger index, T[] dat){
+	bool insert(uinteger index, T[] dat){
 		if (index >= taken){
 			return false;
 		}
@@ -110,7 +121,7 @@ public:
 	/// Inserts an element into this list
 	/// 
 	/// Returns: true if done, false if index out of bounds, or not done
-	void insert(uinteger index, T dat){
+	bool insert(uinteger index, T dat){
 		if (index >= taken){
 			return false;
 		}
@@ -125,7 +136,7 @@ public:
 	/// `sp` is the separator, it will be added to the end of each list-element  
 	/// 
 	/// Returns: true if done, false if not due to some Exception
-	void saveFile(string s, T sp){
+	bool saveFile(string s, T sp){
 		try{
 			File f = File(s,"w");
 			uinteger i;
@@ -255,7 +266,7 @@ unittest{
 	assert(list.readLast() == 8);
 	assert(list.readLast(2) == [7, 8]);
 	//`List.readRange`
-	assert(list.readRange(0, 2) == [1, 1]);
+	assert(list.read(0, 2) == [1, 1]);
 	//`List.remove`
 	list.remove(0, 2);
 	assert(list.read(0) == 2);
@@ -1191,8 +1202,8 @@ public:
 
 /// For reading large files which otherwise, would take too much memory
 /// 
-/// Aside from reading, it can also write to files.
-class FileReader{
+/// Aside from reading, it can also write to files. TODO make it ready
+/*class FileReader{
 private:
 	File file; /// the file currently loaded
 	bool closeOnDestroy; /// stores if the file will be closed when this object is destroyed
@@ -1344,7 +1355,7 @@ public:
 	/// `chunkSize` is the number of bytes to shift in one iteration
 	/// 
 	/// Returns: true if done, false if not, or index was out of bounds TODO add tests for this
-	/*bool remove (uinteger index, uinteger length){
+	bool remove (uinteger index, uinteger length){
 		if (this.size <= index || this.size - index < length)
 			return false;
 		try{
@@ -1359,15 +1370,15 @@ public:
 			return false;
 		}
 		return true;
-	}*/
+	}
 	/// inserts some bytes at the seek. i.e, shifts existing data from index=seek+1 onwards and makes space for new data, and writes it
 	/// 
 	/// Does not work if minSeek or maxSeek is set
 	/// 
 	/// Returns: true if successful, false if not
-	/*bool insert (ubyte[] data){
+	bool insert (ubyte[] data){
 		// TODO make this
-	}*/
+	}
 	/// truncates a file, i.e removes last byte(s) from file.
 	/// 
 	/// Does not work if minSeek and/or maxSeek were non-zero.
@@ -1379,7 +1390,7 @@ public:
 	/// `onFailTrySlow` if true, when `SetEndOfFile` or `ftruncate` fails, it'll use a slower method that might work
 	/// 
 	/// Returns: true if file was truncated, false if not, for example if the file size was less than newSize TODO add tests
-	/*bool truncate(uinteger newSize, bool onFailTrySlow=false){
+	bool truncate(uinteger newSize, bool onFailTrySlow=false){
 		if (_minSeek + _maxSeek != 0 || newSize < this.size){
 			return false;
 		}
@@ -1399,7 +1410,7 @@ public:
 			return false;
 		}
 		return (file.size == newSize);
-	}*/
+	}
 	/// from where the next byte will be read/write
 	@property ulong seek (){
 		if (_maxSeek + _minSeek == 0){
@@ -1479,7 +1490,7 @@ unittest{
 	/// close it
 	.destroy (fread);
 	remove (fname);
-}
+}*/
 
 /// used by Tree class to hold individual nodes in the tree
 struct TreeNode(T){
