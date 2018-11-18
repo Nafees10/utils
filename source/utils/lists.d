@@ -16,6 +16,7 @@ private:
 	T[] list; /// the actual list
 	uinteger taken=0; /// how many elements are actually stored in the list
 	uinteger extraAlloc; /// how many extra elements to make space for when list length runs out
+	uinteger _seek = 0; /// where to read/write next if index isn't specified
 public:
 	/// constructor
 	/// 
@@ -48,6 +49,70 @@ public:
 		}
 		list[index]=dat;
 		return true;
+	}
+	/// Changes the value of element at seek. Seek is increased by one
+	/// 
+	/// Arguments:
+	/// `value` is the new value
+	/// 
+	/// Returns: true if successful, false if seek if out of bounds
+	bool write (T value){
+		if (_seek >= taken){
+			return false;
+		}
+		list[_seek] = value;
+		_seek ++;
+		return true;
+	}
+	/// Changes the value of elements starting at index=seek. Seek is increased by number of elements affected
+	/// 
+	/// Arguments:
+	/// `elements` is the array of new values of the elements
+	/// 
+	/// Returns: true if successful, false if not enough elements in list or seek out of bounds
+	bool write (T[] elements){
+		if (_seek + elements.length >= taken){
+			return false;
+		}
+		list[_seek .. _seek + elements.length] = elements.dup;
+		_seek += elements.length;
+		return true;
+	}
+	/// Reads an element at index=seek. Seek is increased by one
+	/// 
+	/// Returns: the read element
+	/// 
+	/// Throws: Exception if seek is out of bounds
+	T read(){
+		if (_seek >= taken){
+			throw new Exception ("seek out of bounds");
+		}
+		T r = list[_seek];
+		_seek ++;
+		return r;
+	}
+	/// Reads a number of elements starting at index=seek. Seek is increased by number of elements
+	/// 
+	/// Arguments:
+	/// `buffer` is the array into which the elements will be read. set `buffer.length` to number of elements to read
+	/// 
+	/// Returns: number of elements read into the buffer
+	uinteger read(ref T[] buffer){
+		if (_seek >= taken || buffer.length == 0){
+			return 0;
+		}
+		uinteger count = _seek + buffer.length < taken ? buffer.length : taken - _seek;
+		buffer = list[_seek .. _seek + count].dup;
+		_seek += count;
+		return count;
+	}
+	/// The seek position
+	@property uinteger seek(){
+		return _seek;
+	}
+	/// ditto
+	@property uinteger seek(uinteger newSeek){
+		return _seek = newSeek;
 	}
 	/// Removes last elements(s) starting from an index
 	/// 
@@ -210,11 +275,13 @@ public:
 		uinteger i;
 		list = newList.dup;
 		taken = newList.length;
+		_seek = 0;
 	}
 	/// empties the list
 	void clear(){
 		list = [];
 		taken = 0;
+		_seek = 0;
 	}
 	/// Returns: index of the first matching element. -1 if not found
 	/// 
