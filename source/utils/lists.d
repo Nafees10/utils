@@ -88,6 +88,14 @@ public:
 		}
 		return false;
 	}
+	/// Returns: how many elements can be appended before list length needs to increase
+	@property uinteger freeSpace(){
+		return list.length - taken;
+	}
+	/// makes space for n more elements in list
+	void makeSpace(uinteger n){
+		list.length += n;
+	}
 	/// Inserts an array into this list
 	/// 
 	/// Returns: true if done, false if index out of bounds, or not done
