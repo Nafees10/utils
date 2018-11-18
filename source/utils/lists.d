@@ -12,9 +12,9 @@ import utils.misc;
 /// Provides more functionality for arrays, like searching in arrays, removing elements...
 class List(T){
 private:
-	T[] list;
-	uinteger taken=0;
-	uinteger extraAlloc;
+	T[] list; /// the actual list
+	uinteger taken=0; /// how many elements are actually stored in the list
+	uinteger extraAlloc; /// how many extra elements to make space for when list length runs out
 public:
 	/// constructor
 	/// 
@@ -27,27 +27,37 @@ public:
 		if (taken==list.length){
 			list.length+=extraAlloc;
 		}
+		list[taken] = dat;
 		taken++;
-		list[taken-1] = dat;
 	}
 	/// appends an array to the list
 	void append(T[] dat){
-		list.length = taken;
-		list ~= dat;
-		taken += dat.length;
+		list = list[0 .. taken]~dat.dup;
+		taken = list.length;
 	}
 	/// Changes the value of element at an index.
 	/// 
 	/// Arguments:
 	/// `dat` is the new data
-	void set(uinteger index, T dat){
+	/// 
+	/// Returns: false if index is out of bounds, true if successful
+	bool set(uinteger index, T dat){
+		if (index >= taken){
+			return false;
+		}
 		list[index]=dat;
+		return true;
 	}
 	/// Removes last elements(s) starting from an index
 	/// 
-	/// number of elements to remove is in `count`  
-	/// No range checks are done, so IndexOutOfBound might occur
-	void remove(uinteger index, uinteger count=1){
+	/// Arguments:
+	/// `count ` is number of elements to remove
+	/// 
+	/// Returns: false if range is out of bounds, true if successful
+	bool remove(uinteger index, uinteger count=1){
+		if (index + count >= taken){
+			return false;
+		}
 		integer i;
 		integer till=taken-count;
 		for (i=index;i<till;i++){
@@ -55,78 +65,93 @@ public:
 		}
 		list.length-=count;
 		taken-=count;
+		return true;
 	}
 	/// Removes number of elements from end of list
 	/// 
-	/// No range checks are done, so IndexOutOfBound might occur
+	/// Returns: true if successful, false if not enough elements to remove
 	void removeLast(uinteger count = 1){
-		taken -= count;
-		if (list.length-taken>extraAlloc){
-			list.length=taken;
+		if (count > taken){
+			return false;
 		}
+		taken -= count;
+		return true;
 	}
 	/// shrinks the size of the list, removing last elements.
 	/// 
-	/// If the `newSize` is larger than the actual size, it does nothing
+	/// Returns: true if shrunk, false if not for example if `newSize` was greater than actual size
 	void shrink(uinteger newSize){
 		if (newSize < taken){
 			list.length=newSize;
 			taken = list.length;
+			return true;
 		}
+		return false;
 	}
 	/// Inserts an array into this list
 	/// 
-	/// No range checks are done, so IndexOutOfBound might occur
+	/// Returns: true if done, false if index out of bounds, or not done
 	void insert(uinteger index, T[] dat){
-		integer i;
-		T[] ar,ar2;
-		ar=list[0..index];
-		ar2=list[index..taken];
-		list.length=0;
-		list=ar~dat~ar2;
-		taken+=dat.length;
+		if (index >= taken){
+			return false;
+		}
+		list = list[0 .. index] ~ dat.dup ~ list[index .. taken];
+		taken = list.length;
+		return true;
 	}
 	/// Inserts an element into this list
 	/// 
-	/// No range checks are done, so IndexOutOfBound might occur
+	/// Returns: true if done, false if index out of bounds, or not done
 	void insert(uinteger index, T dat){
-		integer i;
-		T[] ar,ar2;
-		ar=list[0..index];
-		ar2=list[index..taken];
-		list=(ar~[dat]~ar2).dup;
-		taken++;
+		if (index >= taken){
+			return false;
+		}
+		list = list[0 .. index] ~ dat ~ list[index .. taken];
+		taken = list.length;
+		return true;
 	}
 	/// Writes the list to a file.
 	/// 
 	/// Arguemnts:
-	/// `s` is the filename
-	/// `sp` is the separator, it will be added to the end of each list-element
+	/// `s` is the filename  
+	/// `sp` is the separator, it will be added to the end of each list-element  
+	/// 
+	/// Returns: true if done, false if not due to some Exception
 	void saveFile(string s, T sp){
-		File f = File(s,"w");
-		uinteger i;
-		for (i=0;i<taken;i++){
-			f.write(list[i],sp);
+		try{
+			File f = File(s,"w");
+			uinteger i;
+			for (i=0;i<taken;i++){
+				f.write(list[i],sp);
+			}
+			f.close;
+		}catch (Exception e){
+			.destroy(e);
+			return false;
 		}
-		f.close;
+		return true;
 	}
 	/// Reads an element at an index
 	/// 
 	/// Returns: the element read
 	/// 
-	/// No range checks are done, so IndexOutOfBound might occur
+	/// Throws: Exception if index out of bounds
 	T read(uinteger index){
+		if (index >= taken){
+			throw new Exception("index out of bounds");
+		}
 		return list[index];
 	}
 	/// Read a slice from the list.
 	/// 
 	/// Returns: the elements read
 	/// 
-	/// No range checks are done, so IndexOutOfBound might occur
-	T[] readRange(uinteger index,uinteger i2){
-		T[] r;
-		r = list[index .. i2].dup;
-		return r;
+	/// Throws: Exception if index out of bounds
+	T[] read(uinteger index,uinteger i2){
+		if (index >= taken){
+			throw new Exception("index out of bounds");
+		}
+		return list[index .. i2].dup;
 	}
 	/// Reads the last element in list.
 	/// 
@@ -135,19 +160,20 @@ public:
 	/// Throws: Exception if list length is zero
 	T readLast(){
 		if (taken == 0){
-			throw new Exception ("Cannot readLast when length is zero");
+			throw new Exception ("List has no elements, can not readLast");
 		}
 		return list[taken-1];
 	}
 	/// Reads number of elements from end of list
 	/// 
-	/// No range checks are done, so IndexOutOfBound might occur
-	/// 
 	/// Returns: the elements read
+	/// 
+	/// Throws: Exception if not enough elements i.e range out of bounds
 	T[] readLast(uinteger count){
-		T[] r;
-		r = list[taken-count..taken].dup;
-		return r;
+		if (count > taken){
+			throw new Exception ("range out of bounds");
+		}
+		return list[taken-count..taken].dup;
 	}
 	/// Returns: length of the list
 	@property integer length(){
