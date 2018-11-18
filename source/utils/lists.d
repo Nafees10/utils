@@ -353,6 +353,21 @@ unittest{
 	list.setFreeSpace(-3);
 	assert(list.freeSpace == 3);
 	assert(list.setFreeSpace(-10) == false);
+	//reading/writing with seek
+	list.clear;
+	assert(list.seek == 0);
+	list.append([0,1,2,3,4,5,6,7,8]);
+	assert(list.seek == 0);
+	ubyte[] buffer;
+	buffer.length = 4;
+	assert(list.read(buffer) == 4);
+	assert(buffer == [0,1,2,3]);
+	assert(list.seek == 4);
+	assert(list.read == 4);
+	assert(list.write(5) == true);
+	assert(list.read(buffer) == 3);
+	assert(buffer[0 .. 3] == [6,7,8]);
+	assert(list.seek == 9);
 
 	destroy(list);
 }
