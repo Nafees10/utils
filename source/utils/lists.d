@@ -173,6 +173,10 @@ public:
 		}
 		return true;
 	}
+	/// removes the free space, if any, for adding new elements. Call this when done with adding to list.
+	void clearFreeSpace(){
+		list.length = taken;
+	}
 	/// Inserts an array into this list
 	/// 
 	/// Returns: true if done, false if index out of bounds, or not done
@@ -237,6 +241,17 @@ public:
 			throw new Exception("index out of bounds");
 		}
 		return list[index .. i2].dup;
+	}
+	/// Returns: pointer to element at an index
+	/// 
+	/// Be careful that the pointer might not be valid after the list has been resized, so try only to use it after all appending is done
+	/// 
+	/// Throws: Exception if index out of bounds
+	T* readPtr(uinteger index){
+		if (index >= taken){
+			throw new Exception ("index out of bounds");
+		}
+		return &(list[index]);
 	}
 	/// Reads the last element in list.
 	/// 
@@ -368,6 +383,12 @@ unittest{
 	assert(list.read(buffer) == 3);
 	assert(buffer[0 .. 3] == [6,7,8]);
 	assert(list.seek == 9);
+	//`List.readPtr`
+	list.clear;
+	list.append ([0,1,2,3,4,5]);
+	ubyte* ptr = list.readPtr(5);
+	*ptr = 4;
+	assert (list.toArray == [0,1,2,3,4,4]);
 
 	destroy(list);
 }
