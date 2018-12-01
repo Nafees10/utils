@@ -276,9 +276,10 @@ unittest{
 	assert([1, 2, 3, 4].reverseArray == [4, 3, 2, 1]);
 }
 
+/*
 /// divides an array into number of arrays while (trying to) keeping their length same
 /// 
-/// In case it's not possible to keep length same, the lengths will vary
+/// In case it's not possible to keep length same, the left-over elements from array will be added to the last array
 ///
 /// Returns: the divided arrays
 T[][] divideArray(T)(T[] array, uinteger divBy){
@@ -286,6 +287,10 @@ T[][] divideArray(T)(T[] array, uinteger divBy){
 	T[][] r;
 	r.length = divBy;
 	uinteger elementCount = array.length / divBy;
+	if (elementCount == 0){
+		r[0] = array;
+		return r;
+	}
 	foreach (i, element; r){
 		if (elementCount > array.length){
 			break;
@@ -293,9 +298,9 @@ T[][] divideArray(T)(T[] array, uinteger divBy){
 		r[i] = array[0 .. elementCount].dup;
 		array = array[elementCount .. array.length];
 	}
-	// check if there's some elements left, append them to ends if they are
-	foreach (i, element; array){
-		r[i] = r[i] ~ element;
+	// check if there's some elements left, append them to end of last array, to keep the order
+	if (array.length > 0){
+		r[divBy-1] = r[divBy-1] ~ array;
 	}
 	return r;
 }
@@ -303,8 +308,34 @@ T[][] divideArray(T)(T[] array, uinteger divBy){
 unittest{
 	import std.conv : to;
 	assert ([0,1,2,3,4,5].divideArray(2) == [[0,1,2],[3,4,5]]);
-	assert ([0,1,2,3,4,5,6,7].divideArray(3) == [[0,1,6],[2,3,7],[4,5]]);
-	assert ([0,1].divideArray(3) == [[0],[1],[]]);
+	assert ([0,1,2,3,4,5,6,7].divideArray(3) == [[0,1],[2,3],[4,5,6,7]]);
+	assert ([0,1].divideArray(3) == [[0,1],[],[]]);
+}*/
+
+/// Divides an array into smaller arrays, where smaller arrays have a max size
+/// 
+/// Returns: array of the smaller arrays
+T[][] divideArray(T)(T[] array, uinteger maxLength){
+	if (maxLength == 0)
+		throw new Exception("maxLength must be greater than 0");
+	T[][] r;
+	r.length = (array.length / maxLength) + (array.length % maxLength == 0 ? 0 : 1);
+	for (uinteger readFrom = 0, i = 0; i < r.length; i ++){
+		if (readFrom + maxLength > array.length){
+			r[i] = array[readFrom .. array.length];
+		}else{
+			r[i] = array[readFrom .. readFrom + maxLength];
+			readFrom += maxLength;
+		}
+	}
+	return r;
+}
+///
+unittest{
+	assert([0,1,2,3].divideArray(1) == [[0],[1],[2],[3]]);
+	assert([0,1,2,3].divideArray(2) == [[0,1],[2,3]]);
+	assert([0,1,2,3].divideArray(3) == [[0,1,2],[3]]);
+	assert([0,1,2,3].divideArray(4) == [[0,1,2,3]]);
 }
 
 /// Returns: true if a string is a number
