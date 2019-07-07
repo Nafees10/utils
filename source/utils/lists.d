@@ -554,7 +554,7 @@ public:
 		_count = 0;
 	}
 	/// destructor
-	this (){
+	~this (){
 		// clear the whole stack
 		clear;
 	}
