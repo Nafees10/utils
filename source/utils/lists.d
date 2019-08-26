@@ -679,6 +679,75 @@ unittest{
 	assert(stack.pop(3) == [0,1,2]);
 }
 
+/// To manage allocating extra for cases like lists where you need to create new objects often. Also manages initializing the objects  
+/// through a init function.
+/// Creates a number of extra objects at one time, so it has to allocate memory less often.
+class ExtraAlloc(T){
+private:
+	/// stores the free objects.
+	FIFOStack!T _store;
+	/// number of elements to allocate at one time
+	uinteger _allocCount;
+	/// max number of free elements present at one time, if more are present, extra are freed
+	uinteger _maxCount;
+	/// the delegate to call to init each object
+	void delegate(T) _initFunction;
+public:
+	/// constructor
+	this (uinteger extraAllocCount = 10, uinteger maxAllocCount = 20, void delegate(T) initFunction = null){
+		_store = new FIFOStack!T;
+		_allocCount = extraAllocCount;
+		_maxCount = maxAllocCount;
+		_initFunction = initFunction;
+	}
+	/// destructor. Destroys all objects created by this
+	~this (){
+		while (_store.count > 0){
+			.destroy(_store.pop);
+		}
+		.destroy(_store);
+	}
+	/// allocates and initializes objects to fill extraAllocCount
+	/// 
+	/// Returns: true if more objects were allocated, false if the queue is already full, or if the queue had more than maxAlloc, and they were freed
+	bool allocate(){
+		if (_store.count < _allocCount){
+			T[] allocated;
+			allocated.length = _allocCount - _store.count;
+			if (initFunction){
+				for (uinteger i = 0; i < allocated.length; i ++){
+					allocated[i] = new T();
+					initFunction(allocated[i]);
+				}
+			}else{
+				for (uinteger i = 0; i < allocated.length; i ++){
+					allocated[i] = new T();
+				}
+			}
+			_store.push(allocated);
+			return true;
+		}
+		while (_store.count > _maxCount){
+			.destroy(_store.pop);
+		}
+		return false;
+	}
+	/// Returns: an object
+	T get(){
+		if (_store.count == 0){
+			allocate();
+		}
+		return _store.pop;
+	}
+	/// Marks an object as free. Frees is if there are already enough free objects
+	void free(T obj){
+		_store.push(obj);
+		if (_store.count > _maxCount){
+			allocate();
+		}
+	}
+}
+
 /// A linked list, used where only reading in the forward direction is required
 class LinkedList(T){
 private:
