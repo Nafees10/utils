@@ -690,11 +690,11 @@ private:
 	uinteger _allocCount;
 	/// max number of free elements present at one time, if more are present, extra are freed
 	uinteger _maxCount;
-	/// the delegate to call to init each object
-	void delegate(T) _initFunction;
+	/// the delegate that will be called to get a new object
+	T delegate() _initFunction;
 public:
 	/// constructor
-	this (uinteger extraAllocCount = 10, uinteger maxAllocCount = 20, void delegate(T) initFunction = null){
+	this (uinteger extraAllocCount, uinteger maxAllocCount, T delegate() initFunction){
 		_store = new FIFOStack!T;
 		_allocCount = extraAllocCount;
 		_maxCount = maxAllocCount;
@@ -714,15 +714,8 @@ public:
 		if (_store.count < _allocCount){
 			T[] allocated;
 			allocated.length = _allocCount - _store.count;
-			if (initFunction){
-				for (uinteger i = 0; i < allocated.length; i ++){
-					allocated[i] = new T();
-					initFunction(allocated[i]);
-				}
-			}else{
-				for (uinteger i = 0; i < allocated.length; i ++){
-					allocated[i] = new T();
-				}
+			for (uinteger i = 0; i < allocated.length; i ++){
+				allocated[i] = _initFunction();
 			}
 			_store.push(allocated);
 			return true;
