@@ -78,7 +78,7 @@ string[] filesModified(string filePath, SysTime lastTime, string[] exclude = [])
 	if (filePath.isDir){
 		LinkedList!string modifiedList = new LinkedList!string;
 		FIFOStack!string filesToCheck = new FIFOStack!string;
-		filesToCheck.push(listdir(filePath));
+		filesToCheck.push(listDir(filePath));
 		// go through the stack
 		while (filesToCheck.count > 0){
 			string file = filesToCheck.pop;
@@ -90,7 +90,7 @@ string[] filesModified(string filePath, SysTime lastTime, string[] exclude = [])
 			}
 			// check if it's a dir, case yes, push it's files too
 			if (file.isDir){
-				filesToCheck.push(listdir(file));
+				filesToCheck.push(listDir(file));
 			}else if (file.isFile){
 				// is file, check if it was modified
 				if (timeLastModified(file) > lastTime){
@@ -115,7 +115,7 @@ string[] filesModified(string filePath, SysTime lastTime, string[] exclude = [])
 /// only dirs and files are returned, symlinks are ignored
 /// 
 /// Returns: an array containing absolute paths of files/dirs
-string[] listdir(string pathname){
+string[] listDir(string pathname){
 	import std.algorithm;
 	import std.array;
 
@@ -207,6 +207,46 @@ integer indexOf(T)(T[] array, T element){
 unittest{
 	assert([0, 1, 2].indexOf(1) == 1);
 	assert([0, 1, 2].indexOf(4) == -1);
+}
+
+/// Returns index of closing/openinig bracket of the provided bracket  
+/// 
+/// `T` is data type of each element (usually char in case of searching in strings)
+/// `forward` if true, then the search is in forward direction, i.e, the closing bracket is searched for
+/// `opening` is the array of elements that are to be considered as opening brackets
+/// `closing` is the array of elements that are to be considered as closing brackets. Must be in same order as `opening`
+/// `s` is the array to search in
+/// `index` is the index of the opposite bracket
+/// 
+/// Returns: index of closing/opening bracket
+/// 
+/// Throws: Exception if the bracket is not found
+uinteger bracketPos(T, bool forward=true, T[] opening=['[','{','('], T[] closing=[']','}',')'])
+(T[] s, uinteger index){
+	Stack!T brackets = new Stack!T;
+	uinteger i = index;
+	for (uinteger lastInd = (forward ? s.length : 0); i != lastInd; (forward ? i ++: i --)){
+		if ((forward ? opening : closing).hasElement(s[i])){
+			// push it to brackets
+			brackets.push(s[i]);
+		}else if ((forward ? closing : opening).hasElement(s[i])){
+			// make sure the correct bracket was closed
+			if ((forward ? opening : closing).indexOf(s[i]) !=
+				(forward ? closing : opening).indexOf(brackets.pop)){
+				throw new Exception("incorect brackets order - first opened must be last closed");
+			}
+		}
+		if (brackets.count == 0){
+			break;
+		}
+	}
+	.destroy (brackets);
+	return i;
+}
+///
+unittest{
+	assert ((cast(char[])"hello(asdf[asdf])").bracketPos(5) == 16);
+	assert ((cast(char[])"hello(asdf[asdf])").bracketPos(10) == 15);
 }
 
 /// Removes a number of elements starting from an index
