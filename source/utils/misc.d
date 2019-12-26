@@ -221,11 +221,11 @@ unittest{
 /// Returns: index of closing/opening bracket
 /// 
 /// Throws: Exception if the bracket is not found
-uinteger bracketPos(T, bool forward=true, T[] opening=['[','{','('], T[] closing=[']','}',')'])
-(T[] s, uinteger index){
+uinteger bracketPos(T, bool forward=true)
+(T[] s, uinteger index, T[] opening=['[','{','('], T[] closing=[']','}',')']){
 	Stack!T brackets = new Stack!T;
 	uinteger i = index;
-	for (uinteger lastInd = (forward ? s.length : 0); i != lastInd; (forward ? i ++: i --)){
+	for (immutable uinteger lastInd = (forward ? s.length : 0); i != lastInd; (forward ? i ++: i --)){
 		if ((forward ? opening : closing).hasElement(s[i])){
 			// push it to brackets
 			brackets.push(s[i]);
