@@ -380,11 +380,13 @@ unittest{
 
 /// Returns: true if a string is a number
 bool isNum(string s, bool allowDecimalPoint=true){
-	uinteger i;
 	bool hasDecimalPoint = false;
 	if (!allowDecimalPoint){
 		hasDecimalPoint = true; // just a hack that makes it return false on "seeing" decimal point
 	}
+	s = s.dup;
+	if (s.length > 0 && s[0] == '-')
+		s = s[1 .. $];
 	foreach (c; s){
 		if (c == '.' && !hasDecimalPoint){
 			hasDecimalPoint = true;
@@ -403,6 +405,10 @@ unittest{
 	assert("thisIsAVar_1234".isNum == false);
 	assert("5.3".isNum(false) == false);
 	assert("53".isNum(false) == true);
+	assert("-53".isNum(false) == true);
+	assert("-53".isNum(true) == true);
+	assert("-53.0".isNum(false) == false);
+	assert("-53.8".isNum(true) == true);
 }
 
 /// Returns: a string with all uppercase alphabets converted into lowercase
