@@ -387,6 +387,8 @@ bool isNum(string s, bool allowDecimalPoint=true){
 	s = s.dup;
 	if (s.length > 0 && s[0] == '-')
 		s = s[1 .. $];
+	if (s.length == 0)
+		return false;
 	foreach (c; s){
 		if (c == '.' && !hasDecimalPoint){
 			hasDecimalPoint = true;
@@ -409,6 +411,8 @@ unittest{
 	assert("-53".isNum(true) == true);
 	assert("-53.0".isNum(false) == false);
 	assert("-53.8".isNum(true) == true);
+	assert("-".isNum == false);
+	assert("".isNum == false);
 }
 
 /// Returns: a string with all uppercase alphabets converted into lowercase
