@@ -378,6 +378,72 @@ unittest{
 	assert([0,1,2,3].divideArray(4) == [[0,1,2,3]]);
 }
 
+/// Sorts an array, in ascending order, containing floating point, or integers
+/// 
+/// Returns: true if any sorting was done
+bool sortAscending(T)(ref T[] array){
+	if (array.length < 2)
+		return false;
+	bool notSorted;
+	bool changed = false;
+	immutable uinteger lastIndex = array.length-1;
+	do{
+		notSorted = false;
+		for (uinteger i = 0; i < lastIndex; i ++){
+			if (array[i] > array[i+1]){
+				immutable T temp = array[i+1];
+				array[i + 1] = array[i];
+				array[i] = temp;
+				notSorted = true;
+			}
+		}
+		changed = changed || notSorted;
+	}while (notSorted);
+	return changed;
+}
+///
+unittest{
+	int[] array = [0, 2,5,73,2,4,2];
+	array.sortAscending;
+	assert(array == [0, 2, 2, 2, 4, 5, 73]);
+}
+
+/// Sorts an array in ascending order
+/// 
+/// Returns: array containing indexes of original array's elements in the order they are in now
+uinteger[] sortAscendingIndex(T)(ref T[] array){
+	if (array.length < 2)
+		return [0];
+	uinteger[] indexes;
+	indexes.length = array.length;
+	foreach (i; 0 .. indexes.length)
+		indexes[i] = i;
+	bool notSorted;
+	immutable uinteger lastIndex = array.length-1;
+	do{
+		notSorted = false;
+		for (uinteger i = 0; i < lastIndex; i ++){
+			if (array[i] > array[i+1]){
+				immutable T temp = array[i+1];
+				immutable uinteger tempIndex = indexes[i+1];
+				array[i+1] = array[i];
+				indexes[i+1] = indexes[i];
+				array[i] = temp;
+				indexes[i] = tempIndex;
+				notSorted = true;
+			}
+		}
+	}while (notSorted);
+	return indexes;
+}
+///
+unittest{
+	int[] array = [5,4,9,3,6,2,1];
+	uinteger[] indexes = array.sortAscendingIndex;
+	assert(array == [1,2,3,4,5,6,9]);
+	assert(indexes == [6,5,3,1,0,4,2]);
+}
+
 /// Returns: true if a string is a number
 bool isNum(string s, bool allowDecimalPoint=true){
 	bool hasDecimalPoint = false;
