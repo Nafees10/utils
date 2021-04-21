@@ -1378,6 +1378,7 @@ public:
 	}
 }
 
+/// TODO: do something about this
 /// For reading large files which otherwise, would take too much memory
 /// 
 /// Aside from reading, it can also write to files. TODO make it ready
@@ -1669,6 +1670,94 @@ unittest{
 	.destroy (fread);
 	remove (fname);
 }*/
+
+/// For reading/writing sequentially to a ubyte[]
+class Stream{
+private:
+	ubyte[] _stream;
+	uinteger _seek;
+	bool _grow;
+	uinteger _maxSize;
+	union ByteUnion(T){
+		T data;
+		ubyte[T.sizeof] array;
+	}
+public:
+	/// constructor
+	/// 
+	/// `grow` is whether the stream is allowed to grow in size while writing  
+	/// `maxSize` is the maximum size stream is allowed to grow to (0 for no limit)
+	this(bool grow = true, uinteger maxSize = 0){
+		_grow = grow;
+		_maxSize = maxSize;
+	}
+	~this(){
+		.destroy(_stream);
+	}
+	/// Seek position (i.e: next read/write index)
+	@property uinteger seek(){
+		return _seek;
+	}
+	/// ditto
+	@property uinteger seek(uinteger newVal){
+		return _seek = newVal > _stream.length ? _stream.length : newVal;
+	}
+	/// The stream
+	@property ubyte[] stream(){
+		return _stream;
+	}
+	/// ditto
+	@property ubyte[] stream(ubyte[] newVal){
+		return _stream = newVal;
+	}
+	/// Size, in bytes, of stream
+	@property uinteger size(){
+		return _stream.length;
+	}
+	/// Reads a slice from the stream. Will read number of bytes so as to fill `buffer`
+	/// 
+	/// Returns: number of bytes read
+	uinteger read(ubyte[] buffer){
+		immutable uinteger len = _seek + buffer.length > _stream.length ? _stream.length : buffer.length;
+		buffer[0 .. len] = _stream[_seek .. _seek + len];
+		_seek += len;
+		return len;
+	}
+	/// Reads a data type T from current seek. **Do not use this for reading arrays**
+	///
+	/// Will return invalid data if there are insufficient bytes to read from.  
+	/// If value of `n` is non-zero, that number of bytes will be read.
+	/// 
+	/// Returns: the read data
+	T read(T)(ubyte n=0){
+		ByteUnion!T u;
+		if (n == 0 || n > T.sizeof)
+			read(u.array);
+		else
+			read(u.array[0 .. n]);
+		_seek += n == 0 ? T.sizeof : n;
+		return u.data;
+	}
+	/// Reads an array.
+	/// 
+	/// in case of insufficient bytes in stream, will return array of correct length but missing bytes at end.  
+	/// `n` is the number of bytes to read for length of array, default(`0`) is `size_t.sizeof`
+	/// 
+	/// Returns: the read array
+	T[] readArray(T)(ubyte n=0){
+		T[] r;
+		// read length
+		r.length = read!uinteger(n);
+		read(r);
+		return r;
+	}
+	/// Writes data at seek
+	/// 
+	/// Returns: true if written, false if not (could be because stream not allowed to grow, or max size reached)
+	bool write(T)(T data){
+		
+	}
+}
 
 /// used by Tree class to hold individual nodes in the tree
 struct TreeNode(T){
