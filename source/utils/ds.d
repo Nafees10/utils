@@ -1672,6 +1672,8 @@ unittest{
 }*/
 
 /// For reading/writing sequentially to a ubyte[]
+/// 
+/// be careful using maxSize and grow, they're not tested
 class ByteStream{
 private:
 	ubyte[] _stream;
