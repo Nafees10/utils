@@ -1790,7 +1790,8 @@ public:
 			readRaw(u.array);
 		else
 			readRaw(u.array[0 .. n]);
-		_seek += n == 0 ? T.sizeof : n - T.sizeof;
+		if (n > T.sizeof)
+			_seek += n - T.sizeof;
 		return u.data;
 	}
 	/// Reads an array.
@@ -1800,9 +1801,10 @@ public:
 	/// 
 	/// Returns: the read array
 	T[] readArray(T)(ubyte n=0){
+		immutable uinteger len = read!uinteger(n);
 		T[] r;
-		r.length = read!uinteger(n); // length
-		readRaw(r); // then array itself
+		r.length = len / T.sizeof;
+		readRaw((cast(ubyte*)r.ptr)[0 .. r.length * T.sizeof]); // then array itself
 		return r;
 	}
 	/// Writes data at seek. **Do not use this for arrays**
@@ -1861,7 +1863,7 @@ public:
 				return false;
 			_stream.length = newSize;
 		}
-		if (this.write(data.length, n)){
+		if (this.write(data.length * T.sizeof, n)){
 			return writeRaw(data) == data.length * T.sizeof;
 		}
 		return false; // something bad went wrong, while writing size
@@ -1870,12 +1872,24 @@ public:
 /// 
 unittest{
 	ByteStream stream = new ByteStream();
+	ubyte[] buffer;
+	uint[] uintArray = [12_345, 123_456, 1_234_567, 12_345_678, 123_456_789];
 
 	stream.write(1024, 8); // 1024 as ulong
 	stream.seek = 0;
 	assert(stream.read!uint(8) == 1024);
 	assert(stream.seek == 8, stream.seek.to!string);
-	stream.writeRaw(cast(uint[])[0,1,2,4,8]);
+	stream.writeRaw(uintArray);
+	stream.seek = 8;
+	buffer.length = 50;
+	stream.readRaw(buffer);
+	assert((cast(uint*)buffer.ptr)[0 .. 5] == uintArray);
+	stream.seek = 0;
+	stream.writeArray(uintArray, 6);
+	assert(stream.seek == (uintArray.length * 4) + 6);
+	stream.seek = 0;
+	uintArray = stream.readArray!(uint)(6);
+	assert (uintArray == [12_345, 123_456, 1_234_567, 12_345_678, 123_456_789], uintArray.to!string);
 }
 
 /// used by Tree class to hold individual nodes in the tree
