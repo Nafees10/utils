@@ -1837,7 +1837,7 @@ public:
 	/// 
 	/// Returns: number of bytes written, **not the number of elements**
 	uinteger writeRaw(T)(T[] data){
-		uinteger len = data.length;
+		uinteger len = data.length * T.sizeof;
 		if (_seek + len > _stream.length){
 			if (!_grow)
 				len = _stream.length - _seek;
@@ -1845,7 +1845,7 @@ public:
 				len = _maxSize - _seek;
 			_stream.length = _seek + len;
 		}
-		_stream[_seek .. _seek + (len * T.sizeof)] = (cast(ubyte*)data.ptr)[0 .. len * T.sizeof];
+		_stream[_seek .. _seek + len] = (cast(ubyte*)data.ptr)[0 .. len];
 		_seek += len;
 		return len;
 	}
@@ -1875,6 +1875,7 @@ unittest{
 	stream.seek = 0;
 	assert(stream.read!uint(8) == 1024);
 	assert(stream.seek == 8, stream.seek.to!string);
+	stream.writeRaw(cast(uint[])[0,1,2,4,8]);
 }
 
 /// used by Tree class to hold individual nodes in the tree
