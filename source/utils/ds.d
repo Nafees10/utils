@@ -1712,7 +1712,7 @@ public:
 	}
 	/// maximum size stream is allowed to grow to, 0 for no limit.  
 	/// 
-	/// This is only enforced while writing
+	/// This is enforced while writing, or changing `ByteStream.size`
 	@property uinteger maxSize(){
 		return _maxSize;
 	}
@@ -1734,6 +1734,40 @@ public:
 	/// Size, in bytes, of stream
 	@property uinteger size(){
 		return _stream.length;
+	}
+	/// Size, setter. if new size is >maxSize, size is set to maxSize
+	@property uinteger size(uinteger newVal){
+		_stream.length = _maxSize < newVal ? _maxSize : newVal;
+		if (_seek > _stream.length)
+			_seek = _stream.length;
+		return _stream.length;
+	}
+	/// Writes this stream to a file
+	/// 
+	/// Returns: true if successful, false if not
+	bool toFile(string fname){
+		try{
+			std.file.write(fname, _stream);
+		}catch (Exception e){
+			.destroy(e);
+			return false;
+		}
+		return true;
+	}
+	/// Reads a stream from file.  
+	/// if successful, seek and maxSize are set to 0;
+	/// 
+	/// Returns: true if done successfully, false if not
+	bool fromFile(string fname){
+		try{
+			_stream = cast(ubyte[])std.file.read(fname);
+		}catch (Exception e){
+			.destroy(e);
+			return false;
+		}
+		_seek = 0;
+		_maxSize = 0;
+		return true;
 	}
 	/// Reads a slice from the stream into buffer. Will read number of bytes so as to fill `buffer`
 	/// 
@@ -1835,7 +1869,7 @@ public:
 }
 /// 
 unittest{
-
+	ByteStream stream = new ByteStream();
 }
 
 /// used by Tree class to hold individual nodes in the tree
