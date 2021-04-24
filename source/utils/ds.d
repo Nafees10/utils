@@ -1787,9 +1787,9 @@ public:
 	T read(T)(ubyte n=0){
 		ByteUnion!T u;
 		if (n == 0 || n > T.sizeof)
-			read(u.array);
+			readRaw(u.array);
 		else
-			read(u.array[0 .. n]);
+			readRaw(u.array[0 .. n]);
 		_seek += n == 0 ? T.sizeof : n;
 		return u.data;
 	}
@@ -1870,6 +1870,10 @@ public:
 /// 
 unittest{
 	ByteStream stream = new ByteStream();
+
+	stream.write(1024, 8); // 1024 as ulong
+	stream.seek = 0;
+	assert(stream.read!uint(8) == 1024);
 }
 
 /// used by Tree class to hold individual nodes in the tree
