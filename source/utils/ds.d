@@ -1710,13 +1710,18 @@ public:
 	@property bool grow(bool newVal){
 		return _grow = newVal;
 	}
-	/// maximum size stream is allowed to grow to, 0 for no limit
+	/// maximum size stream is allowed to grow to, 0 for no limit.  
+	/// 
+	/// This is only enforced while writing
 	@property uinteger maxSize(){
 		return _maxSize;
 	}
 	/// ditto
 	@property uinteger maxSize(uinteger newVal){
-		return _maxSize = newVal;
+		_maxSize = newVal;
+		if (_seek > _maxSize)
+			_seek = _maxSize;
+		return _maxSize;
 	}
 	/// The stream
 	@property ubyte[] stream(){
@@ -1762,9 +1767,8 @@ public:
 	/// Returns: the read array
 	T[] readArray(T)(ubyte n=0){
 		T[] r;
-		// read length
-		r.length = read!uinteger(n);
-		read(r);
+		r.length = read!uinteger(n); // length
+		readRaw(r); // then array itself
 		return r;
 	}
 	/// Writes data at seek. **Do not use this for arrays**
@@ -1795,6 +1799,22 @@ public:
 		_seek += n;
 		return true;
 	}
+	/// Writes an array without its size.
+	/// 
+	/// Returns: number of bytes written, **not the number of elements**
+	uinteger writeRaw(T)(T[] data){
+		uinteger len = data.length;
+		if (_seek + len > _stream.length){
+			if (!_grow)
+				len = _stream.length - _seek;
+			else if (_maxSize && _seek + len > _maxSize)
+				len = _maxSize - _seek;
+			_stream.length = _seek + len;
+		}
+		_stream[_seek .. _seek + (len * T.sizeof)] = (cast(ubyte*)data.ptr)[0 .. len * T.sizeof];
+		_seek += len;
+		return len;
+	}
 	/// Writes an array at seek.
 	/// 
 	/// `n` is the number of bytes to use for storing length of array, default (`0`) is `size_t.sizeof`
@@ -1808,15 +1828,14 @@ public:
 			_stream.length = newSize;
 		}
 		if (this.write(data.length, n)){
-			_stream[_seek .. _seek + data.length * T.sizeof] = (cast(ubyte*)data.ptr)[0 .. data.length * T.sizeof];
-			return true;
+			return writeRaw(data) == data.length * T.sizeof;
 		}
 		return false; // something bad went wrong, while writing size
 	}
 }
 /// 
 unittest{
-	
+
 }
 
 /// used by Tree class to hold individual nodes in the tree
