@@ -1672,7 +1672,7 @@ unittest{
 }*/
 
 /// For reading/writing sequentially to a ubyte[]
-class Stream{
+class ByteStream{
 private:
 	ubyte[] _stream;
 	uinteger _seek;
@@ -1702,6 +1702,22 @@ public:
 	@property uinteger seek(uinteger newVal){
 		return _seek = newVal > _stream.length ? _stream.length : newVal;
 	}
+	/// if the stream is allowed to grow in size while writing
+	@property bool grow(){
+		return _grow;
+	}
+	/// ditto
+	@property bool grow(bool newVal){
+		return _grow = newVal;
+	}
+	/// maximum size stream is allowed to grow to, 0 for no limit
+	@property uinteger maxSize(){
+		return _maxSize;
+	}
+	/// ditto
+	@property uinteger maxSize(uinteger newVal){
+		return _maxSize = newVal;
+	}
 	/// The stream
 	@property ubyte[] stream(){
 		return _stream;
@@ -1714,11 +1730,11 @@ public:
 	@property uinteger size(){
 		return _stream.length;
 	}
-	/// Reads a slice from the stream. Will read number of bytes so as to fill `buffer`
+	/// Reads a slice from the stream into buffer. Will read number of bytes so as to fill `buffer`
 	/// 
 	/// Returns: number of bytes read
-	uinteger read(ubyte[] buffer){
-		immutable uinteger len = _seek + buffer.length > _stream.length ? _stream.length : buffer.length;
+	uinteger readRaw(ubyte[] buffer){
+		immutable uinteger len = _seek + buffer.length > _stream.length ? _stream.length - _seek : buffer.length;
 		buffer[0 .. len] = _stream[_seek .. _seek + len];
 		_seek += len;
 		return len;
@@ -1751,12 +1767,56 @@ public:
 		read(r);
 		return r;
 	}
-	/// Writes data at seek
+	/// Writes data at seek. **Do not use this for arrays**
+	/// 
+	/// `n` is number of bytes to actually write, default (0) is `T.sizeof`
 	/// 
 	/// Returns: true if written, false if not (could be because stream not allowed to grow, or max size reached)
-	bool write(T)(T data){
-		
+	bool write(T)(T data, ubyte n=0){
+		ByteUnion!T u;
+		u.data = data;
+		immutable uinteger newSize = _seek + (n == 0 ? u.array.length : n); // size after writing
+		if (newSize > _stream.length){
+			if (!_grow || (_maxSize && newSize > _maxSize))
+				return false;
+			_stream.length = newSize;
+		}
+		if (n == 0 || n > u.array.length){
+			_stream[_seek .. _seek + u.array.length] = u.array;
+			_seek += u.array.length;
+			n -= u.array.length;
+			if (n){
+				_stream[_seek .. _seek + n] = 0;
+				_seek += n;
+			}
+			return true;
+		}
+		_stream[_seek .. _seek + n] = u.array[0 .. n];
+		_seek += n;
+		return true;
 	}
+	/// Writes an array at seek.
+	/// 
+	/// `n` is the number of bytes to use for storing length of array, default (`0`) is `size_t.sizeof`
+	/// 
+	/// Returns: true if written, false if not (due to maxSize reached or not allowed to grow)
+	bool writeArray(T)(T[] data, ubyte n=0){
+		immutable uinteger newSize = _seek + (n == 0 ? uinteger.sizeof : n) + (data.length * T.sizeof);
+		if (newSize > _stream.length){
+			if (!_grow || (_maxSize && newSize > _maxSize))
+				return false;
+			_stream.length = newSize;
+		}
+		if (this.write(data.length, n)){
+			_stream[_seek .. _seek + data.length * T.sizeof] = (cast(ubyte*)data.ptr)[0 .. data.length * T.sizeof];
+			return true;
+		}
+		return false; // something bad went wrong, while writing size
+	}
+}
+/// 
+unittest{
+	
 }
 
 /// used by Tree class to hold individual nodes in the tree
