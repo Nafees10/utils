@@ -1790,7 +1790,7 @@ public:
 			readRaw(u.array);
 		else
 			readRaw(u.array[0 .. n]);
-		_seek += n == 0 ? T.sizeof : n;
+		_seek += n == 0 ? T.sizeof : n - T.sizeof;
 		return u.data;
 	}
 	/// Reads an array.
@@ -1874,6 +1874,7 @@ unittest{
 	stream.write(1024, 8); // 1024 as ulong
 	stream.seek = 0;
 	assert(stream.read!uint(8) == 1024);
+	assert(stream.seek == 8, stream.seek.to!string);
 }
 
 /// used by Tree class to hold individual nodes in the tree
