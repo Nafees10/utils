@@ -1931,6 +1931,7 @@ unittest{
 	assert(stream.readRaw(buffer) == buffer.length);
 	uintArray = (cast(uint*)buffer.ptr)[0 .. uintArray.length];
 	assert(uintArray[0] == 50 && uintArray[1 .. $] == [123_456, 1_234_567, 12_345_678, 123_456_789]);
+	assert(stream.readAt!uint(4) == 123_456);
 }
 
 /// used by Tree class to hold individual nodes in the tree
