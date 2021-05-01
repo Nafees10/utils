@@ -1780,6 +1780,19 @@ public:
 		_seek += len;
 		return len;
 	}
+	/// Reads at a seek without changing seek. **Does not work for dynamic arrays**
+	/// 
+	/// Will still return an invalid value if reading outside stream
+	/// 
+	/// Returns: the data read at position
+	T readAt(T)(uinteger at){
+		ByteUnion!T r;
+		immutable uinteger prevSeek = _seek;
+		at = at > _stream.length ? _stream.length : at;
+		immutable uinteger len = at + r.array.length > _stream.length ? _stream.length - at : r.array.length;
+		r.array[0 .. len] = _stream[at .. at + len];
+		return r.data;
+	}
 	/// Reads a data type T from current seek. **Do not use this for reading arrays**
 	///
 	/// Will return invalid data if there are insufficient bytes to read from.  
@@ -1826,6 +1839,8 @@ public:
 		if (n == 0 || n > u.array.length){
 			_stream[_seek .. _seek + u.array.length] = u.array;
 			_seek += u.array.length;
+			if (n <= u.array.length)
+				return true;
 			n -= u.array.length;
 			if (n){
 				_stream[_seek .. _seek + n] = 0;
@@ -1852,6 +1867,20 @@ public:
 		_stream[_seek .. _seek + len] = (cast(ubyte*)data.ptr)[0 .. len];
 		_seek += len;
 		return len;
+	}
+	/// Writes (overwriting existing) data `at` a seek, without changing seek. 
+	/// 
+	/// `n` is number of bytes to actually write. default (0) is T.sizeof
+	/// Will append to end of stream if `at` is outside stream
+	/// 
+	/// Returns: true if written successfully, false if not
+	bool writeAt(T)(uinteger at, T data, ubyte n = 0){
+		// writing is bit complicated, so just use `write` and change seek back to original after
+		immutable uinteger prevSeek = _seek;
+		_seek = at > _stream.length ? _stream.length : at;
+		immutable bool r = this.write(data, n);
+		_seek = prevSeek;
+		return r;
 	}
 	/// Writes an array at seek.
 	/// 
@@ -1886,12 +1915,22 @@ unittest{
 	buffer.length = 50;
 	stream.readRaw(buffer);
 	assert((cast(uint*)buffer.ptr)[0 .. 5] == uintArray);
+
 	stream.seek = 0;
 	stream.writeArray(uintArray, 6);
 	assert(stream.seek == (uintArray.length * 4) + 6);
 	stream.seek = 0;
 	uintArray = stream.readArray!(uint)(6);
 	assert (uintArray == [12_345, 123_456, 1_234_567, 12_345_678, 123_456_789], uintArray.to!string);
+
+	stream.seek = 0;
+	stream.writeRaw(uintArray);
+	stream.writeAt(0, cast(uint)50);
+	buffer.length = uintArray.length * uint.sizeof;
+	stream.seek = 0;
+	assert(stream.readRaw(buffer) == buffer.length);
+	uintArray = (cast(uint*)buffer.ptr)[0 .. uintArray.length];
+	assert(uintArray[0] == 50 && uintArray[1 .. $] == [123_456, 1_234_567, 12_345_678, 123_456_789]);
 }
 
 /// used by Tree class to hold individual nodes in the tree
