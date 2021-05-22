@@ -1782,45 +1782,66 @@ public:
 	}
 	/// Reads at a seek without changing seek. **Does not work for dynamic arrays**
 	/// 
-	/// Will still return an invalid value if reading outside stream
+	/// Will still return an invalid value if reading outside stream  
+	/// Sets `incompleteRead` to true if there were less bytes in stream that T.sizeof
 	/// 
 	/// Returns: the data read at position
-	T readAt(T)(uinteger at){
+	T readAt(T)(uinteger at, ref bool incompleteRead){
 		ByteUnion!T r;
 		immutable uinteger prevSeek = _seek;
 		at = at > _stream.length ? _stream.length : at;
 		immutable uinteger len = at + r.array.length > _stream.length ? _stream.length - at : r.array.length;
+		incompleteRead = len < r.array.length;
 		r.array[0 .. len] = _stream[at .. at + len];
 		return r.data;
 	}
+	/// ditto
+	T readAt(T)(uinteger at){
+		bool dummyBool;
+		return readAt!T(at, dummyBool);
+	}
 	/// Reads a data type T from current seek. **Do not use this for reading arrays**
 	///
-	/// Will return invalid data if there are insufficient bytes to read from.  
+	/// Will return invalid data if there are insufficient bytes to read from. 
+	/// Sets `incompleteRead` to true if there were less bytes in stream that T.sizeof 
 	/// If value of `n` is non-zero, that number of bytes will be read.
 	/// 
 	/// Returns: the read data
-	T read(T)(ubyte n=0){
+	T read(T)(ref bool incompleteRead, ubyte n=0){
 		ByteUnion!T u;
+		uinteger readCount;
 		if (n == 0 || n > T.sizeof)
-			readRaw(u.array);
+			readCount = readRaw(u.array);
 		else
-			readRaw(u.array[0 .. n]);
+			readCount = readRaw(u.array[0 .. n]);
+		incompleteRead = readCount < n;
 		if (n > T.sizeof)
 			_seek += n - T.sizeof;
 		return u.data;
 	}
+	/// ditto
+	T read(T)(ubyte n=0){
+		bool dummyBool;
+		return read!T(dummyBool, n);
+	}
 	/// Reads an array.
 	/// 
 	/// in case of insufficient bytes in stream, will return array of correct length but missing bytes at end.  
+	/// `readCount` is the number of elements that were actually read (this can be < length if stream doesnt have enough bytes)
 	/// `n` is the number of bytes to read for length of array, default(`0`) is `size_t.sizeof`
 	/// 
 	/// Returns: the read array
-	T[] readArray(T)(ubyte n=0){
+	T[] readArray(T)(ref uinteger readCount, ubyte n=0){
 		immutable uinteger len = read!uinteger(n);
 		T[] r;
 		r.length = len / T.sizeof;
-		readRaw((cast(ubyte*)r.ptr)[0 .. r.length * T.sizeof]); // then array itself
+		readCount = readRaw((cast(ubyte*)r.ptr)[0 .. r.length * T.sizeof]) / T.sizeof;
 		return r;
+	}
+	/// ditto
+	T[] readArray(T)(ubyte n=0){
+		uinteger dummyUint;
+		return readArray!T(dummyUint, n);
 	}
 	/// Writes data at seek. **Do not use this for arrays**
 	/// 
