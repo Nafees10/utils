@@ -1694,10 +1694,6 @@ private:
 	uinteger _seek;
 	bool _grow;
 	uinteger _maxSize;
-	union ByteUnion(T){
-		T data;
-		ubyte[T.sizeof] array;
-	}
 public:
 	/// constructor
 	/// 
