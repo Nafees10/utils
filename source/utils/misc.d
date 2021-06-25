@@ -125,6 +125,59 @@ string[] listDir(string pathname){
 		.array;
 }
 
+
+/// Reads a hexadecimal number from string
+/// 
+/// Returns: the number in a uinteger
+/// 
+/// Throws: Exception in case string is not a hexadecimal number, or too big to store in uinteger, or empty string
+private uinteger readHexadecimal(string str){
+	import std.range : iota, array;
+	if (str.length == 0)
+		throw new Exception("cannot read hexadecimal number from empty string");
+	if (str.length > uinteger.sizeof * 2) // str.length / 2 = numberOfBytes 
+		throw new Exception("hexadecimal number is too big to store in uinteger");
+	static char[16] DIGITS = iota('0', '9'+1).array ~ iota('a', 'f'+1).array;
+	str = str.lowercase;
+	if (!(cast(char[])str).matchElements(DIGITS))
+		throw new Exception("invalid character in hexadecimal number");
+	uinteger r;
+	immutable uinteger lastInd = str.length - 1;
+	foreach (i, c; str)
+		r |= DIGITS.indexOf(c) << 4 * (lastInd-i);
+	return r;
+}
+/// 
+unittest{
+	assert("FF".readHexadecimal == 0xFF);
+	assert("F0".readHexadecimal == 0xF0);
+	assert("EF".readHexadecimal == 0xEF);
+	assert("A12f".readHexadecimal == 0xA12F);
+}
+
+/// Reads a binary number from string
+/// 
+/// Returns: the number in a uinteger
+/// 
+/// Throws: Exception in case string is not a binary number, or too big to store in uinteger, or empty string
+private uinteger readBinary(string str){
+	if (str.length == 0)
+		throw new Exception("cannot read binary number from empty string");
+	if (str.length > uinteger.sizeof * 8)
+		throw new Exception("binary number is too big to store in uinteger");
+	if (!(cast(char[])str).matchElements(['0','1']))
+		throw new Exception("invalid character in binary number");
+	uinteger r;
+	immutable uinteger lastInd = str.length-1;
+	foreach (i, c; str)
+		r |= (c == '1') << (lastInd - i);
+	return r;
+}
+/// 
+unittest{
+	assert("01010101".readBinary == 0B01010101);
+}
+
 /// Returns: true if an aray has an element, false if no
 bool hasElement(T)(T[] array, T element){
 	bool r = false;
