@@ -9,10 +9,13 @@ import std.path;
 import utils.lists;
 import std.datetime;
 
+public import utils.ds : ByteUnion;
 ///`integer is a `long` on 64 bit systems, and `int` on 32 bit systems
 alias integer = ptrdiff_t;
 ///`uinteger` is a `ulong` on 64 bit systems, and `uint` on 32 bit systems
 alias uinteger = size_t;
+/// used to read data as array of bytes
+alias ByteUnion = utils.ds.ByteUnion;
 
 /// Reads a file into array of string
 ///

@@ -8,6 +8,20 @@ import std.stdio;
 import std.conv : to;
 import utils.misc;
 
+/// Used to read some data type as `ubyte[x]`
+union ByteUnion(T){
+	T data; /// data
+	ubyte[T.sizeof] array; /// array of bytes
+	/// constructor
+	this(T data){
+		this.data = data;
+	}
+	/// ditto
+	this(ubyte[T.sizeof] array){
+		this.array = array;
+	}
+}
+
 /// Use to manage dynamic arrays that frequently change lengths
 /// 
 /// Provides more functionality for arrays, like searching in arrays, removing elements...
