@@ -134,7 +134,7 @@ string[] listDir(string pathname){
 /// Returns: the number in a uinteger
 /// 
 /// Throws: Exception in case string is not a hexadecimal number, or too big to store in uinteger, or empty string
-private uinteger readHexadecimal(string str){
+uinteger readHexadecimal(string str){
 	import std.range : iota, array;
 	if (str.length == 0)
 		throw new Exception("cannot read hexadecimal number from empty string");
@@ -163,7 +163,7 @@ unittest{
 /// Returns: the number in a uinteger
 /// 
 /// Throws: Exception in case string is not a binary number, or too big to store in uinteger, or empty string
-private uinteger readBinary(string str){
+uinteger readBinary(string str){
 	if (str.length == 0)
 		throw new Exception("cannot read binary number from empty string");
 	if (str.length > uinteger.sizeof * 8)
