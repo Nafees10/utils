@@ -410,11 +410,11 @@ unittest{
 /// A basic stack with push, and pop
 class Stack(T){
 private:
-	struct stackItem(T){
+	struct StackItem(T){
 		T data; /// the data this item holds
-		stackItem* prev; /// pointer to previous stackItem
+		StackItem* prev; /// pointer to previous StackItem
 	}
-	stackItem!(T)* lastItemPtr;
+	StackItem!(T)* lastItemPtr;
 	size_t itemCount;
 public:
 	this(){
@@ -426,7 +426,7 @@ public:
 	}
 	/// Appends an item to the stack
 	void push(T item){
-		stackItem!(T)* newItem = new stackItem!T;
+		StackItem!(T)* newItem = new StackItem!T;
 		(*newItem).data = item;
 		(*newItem).prev = lastItemPtr;
 		lastItemPtr = newItem;
@@ -435,19 +435,18 @@ public:
 	}
 	/// Appends an array of items to the stack
 	void push(T[] items){
-		// put them all in stackItem[]
-		stackItem!(T)*[] newItems;
+		// put them all in StackItem[]
+		StackItem!(T)*[] newItems;
 		newItems.length = items.length;
 		for (size_t i = 0; i < items.length; i ++){
-			newItems[i] = new stackItem!T;
+			newItems[i] = new StackItem!T;
 			(*newItems[i]).data = items[i];
 		}
 		// make them all point to their previous item, except for the first one, which should point to `lastItemPtr`
-		for (size_t i = newItems.length - 1; i > 0; i --){
-			(*newItems[i]).prev = newItems[i-1];
-		}
+		foreach_reverse (i; 1 .. newItems.length)
+			newItems[i].prev = newItems[i - 1];
 		(*newItems[0]).prev = lastItemPtr;
-		lastItemPtr = newItems[newItems.length - 1];
+		lastItemPtr = newItems[$ - 1];
 		//increase count
 		itemCount += newItems.length;
 	}
@@ -461,7 +460,7 @@ public:
 		if (lastItemPtr !is null){
 			T r = (*lastItemPtr).data;
 			// delete it from stack
-			stackItem!(T)* prevItem = (*lastItemPtr).prev;
+			StackItem!(T)* prevItem = (*lastItemPtr).prev;
 			destroy(*lastItemPtr);
 			lastItemPtr = prevItem;
 			//decrease count
@@ -485,7 +484,7 @@ public:
 		if (itemCount >= count){
 			T[] r;
 			r.length = count;
-			stackItem!(T)* ptr = lastItemPtr;
+			StackItem!(T)* ptr = lastItemPtr;
 			static if (reverse){
 				for (ptrdiff_t i = count-1; i >= 0; i --){
 					r[i] = (*ptr).data;
@@ -513,10 +512,10 @@ public:
 	/// Empties the stack, pops all items
 	void clear(){
 		// go through all items and delete em
-		stackItem!(T)* ptr;
+		StackItem!(T)* ptr;
 		ptr = lastItemPtr;
 		while (ptr !is null){
-			stackItem!(T)* prevPtr = (*ptr).prev;
+			StackItem!(T)* prevPtr = (*ptr).prev;
 			destroy(*ptr);
 			ptr = prevPtr;
 		}
@@ -611,14 +610,14 @@ public:
 					(*toPush[i-1]).next = toPush[i];
 				}
 			}
-			(*toPush[toPush.length-1]).next = null;
+			(*toPush[$ - 1]).next = null;
 			// now "insert" it
 			if (lastItemPtr is null){
 				firstItemPtr = toPush[0];
 			}else{
 				(*lastItemPtr).next = toPush[0];
 			}
-			lastItemPtr = toPush[toPush.length-1];
+			lastItemPtr = toPush[$ - 1];
 			_count += elements.length;
 		}
 	}
@@ -828,11 +827,10 @@ public:
 				(*newNodes[i]).data = items[i];
 			}
 			// make them point to their next node
-			for (size_t i = 0, end = newNodes.length-1; i < end; i ++){
-				(*newNodes[i]).next = newNodes[i+1];
-			}
+			foreach (i, node; newNodes[0 .. $ - 1])
+				node.next = newNodes[i + 1];
 			// make last item from newNodes point to null
-			(*newNodes[newNodes.length-1]).next = null;
+			newNodes[$ - 1].next = null;
 			// make the last item point to first item in newNodes
 			if (firstItemPtr is null){
 				firstItemPtr = newNodes[0];
@@ -841,7 +839,7 @@ public:
 				(*lastItemPtr).next = newNodes[0];
 			}
 			// mark the last item in newNodes as last in list
-			lastItemPtr = newNodes[newNodes.length-1];
+			lastItemPtr = newNodes[$ - 1];
 			//increase count
 			itemCount += newNodes.length;
 		}
@@ -1105,18 +1103,17 @@ public:
 				(*newNodes[i]).data = nodes[i];
 			}
 			// make them point to their next node
-			for (size_t i = 0, end = newNodes.length-1; i < end; i ++){
-				(*newNodes[i]).next = newNodes[i+1];
-			}
+			foreach (i, node; newNodes[0 .. $ - 1])
+				node.next = newNodes[i + 1];
 			// check if has to insert at beginning or at after last-read
 			if (lastReadPtr !is null && nodes.length > 0){
 				// and make the last node in list point to the node after last-read
-				(*newNodes[newNodes.length-1]).next = (*lastReadPtr).next;
+				(*newNodes[$ - 1]).next = (*lastReadPtr).next;
 				// make last read node point to the first new-node
 				(*lastReadPtr).next = newNodes[0];
 			}else{
 				// insert at beginning
-				(*newNodes[newNodes.length-1]).next = firstItemPtr;
+				(*newNodes[$ - 1]).next = firstItemPtr;
 				// make this the first node
 				firstItemPtr = newNodes[0];
 			}
@@ -1350,7 +1347,7 @@ public:
 		maxLen = maxLength;
 	}
 	~this(){
-		delete list;
+		.destroy(list);
 	}
 	/// adds an item to the log
 	void add(T dat){
