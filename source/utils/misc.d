@@ -8,6 +8,7 @@ import std.file;
 import std.path;
 import std.datetime;
 import std.datetime.stopwatch;
+import std.string : format;
 
 import utils.ds;
 public import utils.ds : ByteUnion;
