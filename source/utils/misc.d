@@ -7,9 +7,50 @@ import std.stdio;
 import std.file;
 import std.path;
 import std.datetime;
+import std.datetime.stopwatch;
 
 import utils.ds;
 public import utils.ds : ByteUnion;
+
+struct Times{
+	ulong min = ulong.max;
+	ulong max = 0;
+	ulong total = 0;
+	ulong avg = 0;
+	string toString() const @safe pure{
+		return format!"min\tmax\tavg\ttotal\t/msecs\n%d\t%d\t%d\t%d"(min, max, avg, total);
+	}
+}
+
+Times bench(void delegate(ref StopWatch sw) func, ulong runs = 100_000){
+	Times time;
+	StopWatch sw = StopWatch(AutoStart.no);
+	foreach (i; 0 .. runs){
+		func(sw);
+		immutable ulong currentTime = sw.peek.total!"msecs" - time.total;
+		time.min = currentTime < time.min ? currentTime : time.min;
+		time.max = currentTime > time.max ? currentTime : time.max;
+		time.total = sw.peek.total!"msecs";
+	}
+	time.avg = time.total / runs;
+	return time;
+}
+
+Times bench(void delegate() func, ulong runs = 100_000){
+	Times time;
+	StopWatch sw = StopWatch(AutoStart.no);
+	foreach (i; 0 .. runs){
+		sw.start();
+		func();
+		sw.stop();
+		immutable ulong currentTime = sw.peek.total!"msecs" - time.total;
+		time.min = currentTime < time.min ? currentTime : time.min;
+		time.max = currentTime > time.max ? currentTime : time.max;
+		time.total = sw.peek.total!"msecs";
+	}
+	time.avg = time.total / runs;
+	return time;
+}
 
 /// Reads a file into array of string
 ///
