@@ -8,7 +8,7 @@ import std.file;
 import std.path;
 import std.datetime;
 import std.datetime.stopwatch;
-import std.string : format;
+import std.string : format, chomp;
 
 import utils.ds;
 public import utils.ds : ByteUnion;
@@ -70,10 +70,7 @@ string[] fileToArray(string fname){
 		if (i+1>=r.length){
 			r.length+=5;
 		}
-		line=f.readln;
-		if (line.length>0 && line[line.length-1]=='\n'){
-			line.length--;
-		}
+		line=f.readln.chomp("\n");
 		r[i]=line;
 		i++;
 	}
@@ -181,9 +178,9 @@ size_t readHexadecimal(string str){
 	if (!(cast(char[])str).matchElements(DIGITS))
 		throw new Exception("invalid character in hexadecimal number");
 	size_t r;
-	immutable size_t lastInd = str.length - 1;
+	immutable size_t lastInd = cast(uint)str.length - 1;
 	foreach (i, c; str)
-		r |= DIGITS.indexOf(c) << 4 * (lastInd-i);
+		r |= DIGITS.indexOf(c) << 4 * (lastInd - i);
 	return r;
 }
 /// 
@@ -207,7 +204,7 @@ size_t readBinary(string str){
 	if (!(cast(char[])str).matchElements(['0','1']))
 		throw new Exception("invalid character in binary number");
 	size_t r;
-	immutable size_t lastInd = str.length-1;
+	immutable size_t lastInd = cast(uint)str.length - 1;
 	foreach (i, c; str)
 		r |= (c == '1') << (lastInd - i);
 	return r;
@@ -391,23 +388,6 @@ unittest{
 	assert([2].insertElement(1, 0) == [1, 2]);
 }
 
-/// returns: the reverse of an array
-T[] reverseArray(T)(T[] s){
-	ptrdiff_t i, writePos = 0;
-	T[] r;
-	r.length = s.length;
-
-	for (i = s.length-1; writePos < r.length; i--){
-		r[writePos] = s[i];
-		writePos ++;
-	}
-	return r;
-}
-///
-unittest{
-	assert([1, 2, 3, 4].reverseArray == [4, 3, 2, 1]);
-}
-
 /*
 /// divides an array into number of arrays while (trying to) keeping their length same
 /// 
@@ -468,72 +448,6 @@ unittest{
 	assert([0,1,2,3].divideArray(2) == [[0,1],[2,3]]);
 	assert([0,1,2,3].divideArray(3) == [[0,1,2],[3]]);
 	assert([0,1,2,3].divideArray(4) == [[0,1,2,3]]);
-}
-
-/// Sorts an array, in ascending order, containing floating point, or integers
-/// 
-/// Returns: true if any sorting was done
-bool sortAscending(T)(ref T[] array){
-	if (array.length < 2)
-		return false;
-	bool notSorted;
-	bool changed = false;
-	immutable size_t lastIndex = array.length-1;
-	do{
-		notSorted = false;
-		for (size_t i = 0; i < lastIndex; i ++){
-			if (array[i] > array[i+1]){
-				immutable T temp = array[i+1];
-				array[i + 1] = array[i];
-				array[i] = temp;
-				notSorted = true;
-			}
-		}
-		changed = changed || notSorted;
-	}while (notSorted);
-	return changed;
-}
-///
-unittest{
-	int[] array = [0, 2,5,73,2,4,2];
-	array.sortAscending;
-	assert(array == [0, 2, 2, 2, 4, 5, 73]);
-}
-
-/// Sorts an array in ascending order
-/// 
-/// Returns: array containing indexes of original array's elements in the order they are in now
-size_t[] sortAscendingIndex(T)(ref T[] array){
-	if (array.length < 2)
-		return [0];
-	size_t[] indexes;
-	indexes.length = array.length;
-	foreach (i; 0 .. indexes.length)
-		indexes[i] = i;
-	bool notSorted;
-	immutable size_t lastIndex = array.length-1;
-	do{
-		notSorted = false;
-		for (size_t i = 0; i < lastIndex; i ++){
-			if (array[i] > array[i+1]){
-				immutable T temp = array[i+1];
-				immutable size_t tempIndex = indexes[i+1];
-				array[i+1] = array[i];
-				indexes[i+1] = indexes[i];
-				array[i] = temp;
-				indexes[i] = tempIndex;
-				notSorted = true;
-			}
-		}
-	}while (notSorted);
-	return indexes;
-}
-///
-unittest{
-	int[] array = [5,4,9,3,6,2,1];
-	size_t[] indexes = array.sortAscendingIndex;
-	assert(array == [1,2,3,4,5,6,9]);
-	assert(indexes == [6,5,3,1,0,4,2]);
 }
 
 /// Returns: true if a string is a number
@@ -618,8 +532,7 @@ unittest{
 string[] makeTable(T)(string[] headings, T[][] data){
 	assert(headings.length > 0, "cannot make table with no headings");
 	assert(data.length > 0, "cannot make table with no data");
-	assert(headings.length == data[0].length, "headings.length does not equal data.length "~to!string(headings.length)~"!="~
-		to!string(data[0].length));
+	assert(headings.length == data[0].length, "headings.length does not equal data.length");
 	import utils.lists;
 	// stores the data in string
 	string[][] sData;
