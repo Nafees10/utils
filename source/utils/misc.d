@@ -6,16 +6,10 @@ module utils.misc;
 import std.stdio;
 import std.file;
 import std.path;
-import utils.lists;
 import std.datetime;
 
+import utils.ds;
 public import utils.ds : ByteUnion;
-///`integer is a `long` on 64 bit systems, and `int` on 32 bit systems
-alias integer = ptrdiff_t;
-///`uinteger` is a `ulong` on 64 bit systems, and `uint` on 32 bit systems
-alias uinteger = size_t;
-/// used to read data as array of bytes
-alias ByteUnion = utils.ds.ByteUnion;
 
 /// Reads a file into array of string
 ///
@@ -28,7 +22,7 @@ string[] fileToArray(string fname){
 	File f = File(fname,"r");
 	string[] r;
 	string line;
-	integer i=0;
+	ptrdiff_t i=0;
 	r.length=0;
 	while (!f.eof()){
 		if (i+1>=r.length){
@@ -53,7 +47,7 @@ string[] fileToArray(string fname){
 /// Throws: exception on failure
 void arrayToFile(string[] array, string fname){
 	File f = File(fname,"w");
-	uinteger i;
+	size_t i;
 	for (i=0;i<array.length;i++){
 		f.write(array[i],'\n');
 	}
@@ -131,21 +125,21 @@ string[] listDir(string pathname){
 
 /// Reads a hexadecimal number from string
 /// 
-/// Returns: the number in a uinteger
+/// Returns: the number in a size_t
 /// 
-/// Throws: Exception in case string is not a hexadecimal number, or too big to store in uinteger, or empty string
-uinteger readHexadecimal(string str){
+/// Throws: Exception in case string is not a hexadecimal number, or too big to store in size_t, or empty string
+size_t readHexadecimal(string str){
 	import std.range : iota, array;
 	if (str.length == 0)
 		throw new Exception("cannot read hexadecimal number from empty string");
-	if (str.length > uinteger.sizeof * 2) // str.length / 2 = numberOfBytes 
-		throw new Exception("hexadecimal number is too big to store in uinteger");
+	if (str.length > size_t.sizeof * 2) // str.length / 2 = numberOfBytes 
+		throw new Exception("hexadecimal number is too big to store in size_t");
 	static char[16] DIGITS = iota('0', '9'+1).array ~ iota('a', 'f'+1).array;
 	str = str.lowercase;
 	if (!(cast(char[])str).matchElements(DIGITS))
 		throw new Exception("invalid character in hexadecimal number");
-	uinteger r;
-	immutable uinteger lastInd = str.length - 1;
+	size_t r;
+	immutable size_t lastInd = str.length - 1;
 	foreach (i, c; str)
 		r |= DIGITS.indexOf(c) << 4 * (lastInd-i);
 	return r;
@@ -160,18 +154,18 @@ unittest{
 
 /// Reads a binary number from string
 /// 
-/// Returns: the number in a uinteger
+/// Returns: the number in a size_t
 /// 
-/// Throws: Exception in case string is not a binary number, or too big to store in uinteger, or empty string
-uinteger readBinary(string str){
+/// Throws: Exception in case string is not a binary number, or too big to store in size_t, or empty string
+size_t readBinary(string str){
 	if (str.length == 0)
 		throw new Exception("cannot read binary number from empty string");
-	if (str.length > uinteger.sizeof * 8)
-		throw new Exception("binary number is too big to store in uinteger");
+	if (str.length > size_t.sizeof * 8)
+		throw new Exception("binary number is too big to store in size_t");
 	if (!(cast(char[])str).matchElements(['0','1']))
 		throw new Exception("invalid character in binary number");
-	uinteger r;
-	immutable uinteger lastInd = str.length-1;
+	size_t r;
+	immutable size_t lastInd = str.length-1;
 	foreach (i, c; str)
 		r |= (c == '1') << (lastInd - i);
 	return r;
@@ -202,9 +196,9 @@ bool hasElement(T)(T[] array, T[] elements){
 	bool r = true;
 	elements = elements.dup;
 	// go through the list and match as many elements as possible
-	for (uinteger i = 0; i < elements.length; i ++){
+	for (size_t i = 0; i < elements.length; i ++){
 		// check if it exists in array
-		uinteger index = array.indexOf(elements[i]);
+		size_t index = array.indexOf(elements[i]);
 		if (index == -1){
 			r = false;
 			break;
@@ -246,8 +240,8 @@ unittest{
 }
 
 /// Returns: the index of an element in an array, negative one if not found
-integer indexOf(T)(T[] array, T element){
-	integer i;
+ptrdiff_t indexOf(T)(T[] array, T element){
+	ptrdiff_t i;
 	for (i = 0; i < array.length; i++){
 		if (array[i] == element){
 			break;
@@ -277,11 +271,11 @@ unittest{
 /// Returns: index of closing/opening bracket
 /// 
 /// Throws: Exception if the bracket is not found
-uinteger bracketPos(T, bool forward=true)
-(T[] s, uinteger index, T[] opening=['[','{','('], T[] closing=[']','}',')']){
+size_t bracketPos(T, bool forward=true)
+(T[] s, size_t index, T[] opening=['[','{','('], T[] closing=[']','}',')']){
 	Stack!T brackets = new Stack!T;
-	uinteger i = index;
-	for (immutable uinteger lastInd = (forward ? s.length : 0); i != lastInd; (forward ? i ++: i --)){
+	size_t i = index;
+	for (immutable size_t lastInd = (forward ? s.length : 0); i != lastInd; (forward ? i ++: i --)){
 		if ((forward ? opening : closing).hasElement(s[i])){
 			// push it to brackets
 			brackets.push(s[i]);
@@ -310,7 +304,7 @@ unittest{
 /// No range checks are done, so an IndexOutOfBounds may occur
 ///
 /// Returns: the modified array
-T[] deleteElement(T)(T[] dat, uinteger pos, uinteger count=1){
+T[] deleteElement(T)(T[] dat, size_t pos, size_t count=1){
 	T[] ar1, ar2;
 	ar1 = dat[0..pos];
 	ar2 = dat[pos+count..dat.length];
@@ -327,7 +321,7 @@ unittest{
 /// No range checks are done, so an IndexOutOfBounds may occur
 ///
 /// Returns: the modified array
-T[] insertElement(T)(T[] dat, T[] toInsert, uinteger pos){
+T[] insertElement(T)(T[] dat, T[] toInsert, size_t pos){
 	T[] ar1, ar2;
 	ar1 = dat[0..pos];
 	ar2 = dat[pos..dat.length];
@@ -343,7 +337,7 @@ unittest{
 /// No range checks are done, so an IndexOutOfBounds may occur
 ///
 /// Returns: the modified array
-T[] insertElement(T)(T[] dat, T toInsert, uinteger pos){
+T[] insertElement(T)(T[] dat, T toInsert, size_t pos){
 	T[] ar1, ar2;
 	ar1 = dat[0..pos];
 	ar2 = dat[pos..dat.length];
@@ -357,7 +351,7 @@ unittest{
 
 /// returns: the reverse of an array
 T[] reverseArray(T)(T[] s){
-	integer i, writePos = 0;
+	ptrdiff_t i, writePos = 0;
 	T[] r;
 	r.length = s.length;
 
@@ -378,11 +372,11 @@ unittest{
 /// In case it's not possible to keep length same, the left-over elements from array will be added to the last array
 ///
 /// Returns: the divided arrays
-T[][] divideArray(T)(T[] array, uinteger divBy){
+T[][] divideArray(T)(T[] array, size_t divBy){
 	array = array.dup;
 	T[][] r;
 	r.length = divBy;
-	uinteger elementCount = array.length / divBy;
+	size_t elementCount = array.length / divBy;
 	if (elementCount == 0){
 		r[0] = array;
 		return r;
@@ -411,12 +405,12 @@ unittest{
 /// Divides an array into smaller arrays, where smaller arrays have a max size
 /// 
 /// Returns: array of the smaller arrays
-T[][] divideArray(T)(T[] array, uinteger maxLength){
+T[][] divideArray(T)(T[] array, size_t maxLength){
 	if (maxLength == 0)
 		throw new Exception("maxLength must be greater than 0");
 	T[][] r;
 	r.length = (array.length / maxLength) + (array.length % maxLength == 0 ? 0 : 1);
-	for (uinteger readFrom = 0, i = 0; i < r.length; i ++){
+	for (size_t readFrom = 0, i = 0; i < r.length; i ++){
 		if (readFrom + maxLength > array.length){
 			r[i] = array[readFrom .. array.length];
 		}else{
@@ -442,10 +436,10 @@ bool sortAscending(T)(ref T[] array){
 		return false;
 	bool notSorted;
 	bool changed = false;
-	immutable uinteger lastIndex = array.length-1;
+	immutable size_t lastIndex = array.length-1;
 	do{
 		notSorted = false;
-		for (uinteger i = 0; i < lastIndex; i ++){
+		for (size_t i = 0; i < lastIndex; i ++){
 			if (array[i] > array[i+1]){
 				immutable T temp = array[i+1];
 				array[i + 1] = array[i];
@@ -467,21 +461,21 @@ unittest{
 /// Sorts an array in ascending order
 /// 
 /// Returns: array containing indexes of original array's elements in the order they are in now
-uinteger[] sortAscendingIndex(T)(ref T[] array){
+size_t[] sortAscendingIndex(T)(ref T[] array){
 	if (array.length < 2)
 		return [0];
-	uinteger[] indexes;
+	size_t[] indexes;
 	indexes.length = array.length;
 	foreach (i; 0 .. indexes.length)
 		indexes[i] = i;
 	bool notSorted;
-	immutable uinteger lastIndex = array.length-1;
+	immutable size_t lastIndex = array.length-1;
 	do{
 		notSorted = false;
-		for (uinteger i = 0; i < lastIndex; i ++){
+		for (size_t i = 0; i < lastIndex; i ++){
 			if (array[i] > array[i+1]){
 				immutable T temp = array[i+1];
-				immutable uinteger tempIndex = indexes[i+1];
+				immutable size_t tempIndex = indexes[i+1];
 				array[i+1] = array[i];
 				indexes[i+1] = indexes[i];
 				array[i] = temp;
@@ -495,7 +489,7 @@ uinteger[] sortAscendingIndex(T)(ref T[] array){
 ///
 unittest{
 	int[] array = [5,4,9,3,6,2,1];
-	uinteger[] indexes = array.sortAscendingIndex;
+	size_t[] indexes = array.sortAscendingIndex;
 	assert(array == [1,2,3,4,5,6,9]);
 	assert(indexes == [6,5,3,1,0,4,2]);
 }
@@ -556,7 +550,7 @@ unittest{
 
 /// Returns: true if all characters in a string are alphabets, uppercase, lowercase, or both
 bool isAlphabet(string s){
-	uinteger i;
+	size_t i;
 	bool r=true;
 	foreach (c; s){
 		if ((c < 'a' || c > 'z') && (c < 'A' || c > 'Z')){
@@ -607,7 +601,7 @@ string[] makeTable(T)(string[] headings, T[][] data){
 		string alignment;
 		line = headings[0];
 		alignment = "---";
-		for (uinteger i = 1; i < headings.length; i ++){
+		for (size_t i = 1; i < headings.length; i ++){
 			line ~= " | "~headings[i];
 			alignment ~= " | ---";
 		}

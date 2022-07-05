@@ -28,14 +28,14 @@ union ByteUnion(T){
 class List(T){
 private:
 	T[] list; /// the actual list
-	uinteger taken=0; /// how many elements are actually stored in the list
-	uinteger extraAlloc; /// how many extra elements to make space for when list length runs out
-	uinteger _seek = 0; /// where to read/write next if index isn't specified
+	size_t taken=0; /// how many elements are actually stored in the list
+	size_t extraAlloc; /// how many extra elements to make space for when list length runs out
+	size_t _seek = 0; /// where to read/write next if index isn't specified
 public:
 	/// constructor
 	/// 
 	/// extraCount is the number of extra space to make for new elements when making "room" for new elements
-	this(uinteger extraCount = 4){
+	this(size_t extraCount = 4){
 		extraAlloc = extraCount;
 	}
 	/// appends an element to the list
@@ -57,7 +57,7 @@ public:
 	/// `dat` is the new data
 	/// 
 	/// Returns: false if index is out of bounds, true if successful
-	bool set(uinteger index, T dat){
+	bool set(size_t index, T dat){
 		if (index >= taken){
 			return false;
 		}
@@ -111,21 +111,21 @@ public:
 	/// `buffer` is the array into which the elements will be read. set `buffer.length` to number of elements to read
 	/// 
 	/// Returns: number of elements read into the buffer
-	uinteger read(ref T[] buffer){
+	size_t read(ref T[] buffer){
 		if (_seek >= taken || buffer.length == 0){
 			return 0;
 		}
-		uinteger count = _seek + buffer.length < taken ? buffer.length : taken - _seek;
+		size_t count = _seek + buffer.length < taken ? buffer.length : taken - _seek;
 		buffer = list[_seek .. _seek + count].dup;
 		_seek += count;
 		return count;
 	}
 	/// The seek position
-	@property uinteger seek(){
+	@property size_t seek(){
 		return _seek;
 	}
 	/// ditto
-	@property uinteger seek(uinteger newSeek){
+	@property size_t seek(size_t newSeek){
 		return _seek = newSeek;
 	}
 	/// Removes last elements(s) starting from an index
@@ -134,12 +134,12 @@ public:
 	/// `count ` is number of elements to remove
 	/// 
 	/// Returns: false if range is out of bounds, true if successful
-	bool remove(uinteger index, uinteger count=1){
+	bool remove(size_t index, size_t count=1){
 		if (index + count >= taken){
 			return false;
 		}
-		integer i;
-		integer till=taken-count;
+		ptrdiff_t i;
+		ptrdiff_t till=taken-count;
 		for (i=index;i<till;i++){
 			list[i] = list[i+count];
 		}
@@ -150,7 +150,7 @@ public:
 	/// Removes number of elements from end of list
 	/// 
 	/// Returns: true if successful, false if not enough elements to remove
-	bool removeLast(uinteger count = 1){
+	bool removeLast(size_t count = 1){
 		if (count > taken){
 			return false;
 		}
@@ -160,7 +160,7 @@ public:
 	/// shrinks the size of the list, removing last elements.
 	/// 
 	/// Returns: true if shrunk, false if not for example if `newSize` was greater than actual size
-	bool shrink(uinteger newSize){
+	bool shrink(size_t newSize){
 		if (newSize < taken){
 			list.length=newSize;
 			taken = list.length;
@@ -169,13 +169,13 @@ public:
 		return false;
 	}
 	/// Returns: how many elements can be appended before list length needs to increase
-	@property uinteger freeSpace(){
+	@property size_t freeSpace(){
 		return list.length - taken;
 	}
 	/// make more free space for new elements, or reduce it. To reduce, use n as negative. To decrease by 2, `n=-2`
 	/// 
 	/// Returns: true if done, false if not done, for example if there wasn't enough free space in list to be removed
-	bool setFreeSpace(integer n){
+	bool setFreeSpace(ptrdiff_t n){
 		if (n < 0 && -n > list.length - taken){
 			return false;
 		}
@@ -194,7 +194,7 @@ public:
 	/// Inserts an array into this list
 	/// 
 	/// Returns: true if done, false if index out of bounds, or not done
-	bool insert(uinteger index, T[] dat){
+	bool insert(size_t index, T[] dat){
 		if (index >= taken){
 			return false;
 		}
@@ -205,7 +205,7 @@ public:
 	/// Inserts an element into this list
 	/// 
 	/// Returns: true if done, false if index out of bounds, or not done
-	bool insert(uinteger index, T dat){
+	bool insert(size_t index, T dat){
 		if (index >= taken){
 			return false;
 		}
@@ -223,7 +223,7 @@ public:
 	bool saveFile(string s, T sp){
 		try{
 			File f = File(s,"w");
-			uinteger i;
+			size_t i;
 			for (i=0;i<taken;i++){
 				f.write(list[i],sp);
 			}
@@ -239,7 +239,7 @@ public:
 	/// Returns: the element read
 	/// 
 	/// Throws: Exception if index out of bounds
-	T read(uinteger index){
+	T read(size_t index){
 		if (index >= taken){
 			throw new Exception("index out of bounds");
 		}
@@ -250,7 +250,7 @@ public:
 	/// Returns: the elements read
 	/// 
 	/// Throws: Exception if index out of bounds
-	T[] read(uinteger index,uinteger i2){
+	T[] read(size_t index,size_t i2){
 		if (index >= taken){
 			throw new Exception("index out of bounds");
 		}
@@ -261,7 +261,7 @@ public:
 	/// Be careful that the pointer might not be valid after the list has been resized, so try only to use it after all appending is done
 	/// 
 	/// Throws: Exception if index out of bounds
-	T* readPtr(uinteger index){
+	T* readPtr(size_t index){
 		if (index >= taken){
 			throw new Exception ("index out of bounds");
 		}
@@ -283,14 +283,14 @@ public:
 	/// Returns: the elements read
 	/// 
 	/// Throws: Exception if not enough elements i.e range out of bounds
-	T[] readLast(uinteger count){
+	T[] readLast(size_t count){
 		if (count > taken){
 			throw new Exception ("range out of bounds");
 		}
 		return list[taken-count..taken].dup;
 	}
 	/// Returns: length of the list
-	@property integer length(){
+	@property ptrdiff_t length(){
 		return taken;
 	}
 	/// Exports this list into a array
@@ -301,7 +301,7 @@ public:
 	}
 	/// Loads list from an array
 	void loadArray(T[] newList){
-		uinteger i;
+		size_t i;
 		list = newList.dup;
 		taken = newList.length;
 		_seek = 0;
@@ -318,7 +318,7 @@ public:
 	/// `dat` is the element to search for  
 	/// `i` is the index from where to start, default is 0  
 	/// `forward` if true, searches in a forward direction, from lower index to higher  
-	integer indexOf(bool forward=true)(T dat, integer i=0){
+	ptrdiff_t indexOf(bool forward=true)(T dat, ptrdiff_t i=0){
 		static if (forward){
 			for (;i<taken;i++){
 				if (list[i]==dat){break;}
@@ -415,7 +415,7 @@ private:
 		stackItem* prev; /// pointer to previous stackItem
 	}
 	stackItem!(T)* lastItemPtr;
-	uinteger itemCount;
+	size_t itemCount;
 public:
 	this(){
 		lastItemPtr = null;
@@ -438,12 +438,12 @@ public:
 		// put them all in stackItem[]
 		stackItem!(T)*[] newItems;
 		newItems.length = items.length;
-		for (uinteger i = 0; i < items.length; i ++){
+		for (size_t i = 0; i < items.length; i ++){
 			newItems[i] = new stackItem!T;
 			(*newItems[i]).data = items[i];
 		}
 		// make them all point to their previous item, except for the first one, which should point to `lastItemPtr`
-		for (uinteger i = newItems.length - 1; i > 0; i --){
+		for (size_t i = newItems.length - 1; i > 0; i --){
 			(*newItems[i]).prev = newItems[i-1];
 		}
 		(*newItems[0]).prev = lastItemPtr;
@@ -480,14 +480,14 @@ public:
 	/// Arguments:
 	/// `count` is the number of elements to return  
 	/// `reverse`, if true, elements are read in reverse, last-pushed is last in array  
-	T[] pop(bool reverse=false)(uinteger count){
+	T[] pop(bool reverse=false)(size_t count){
 		//make sure there are enough items
 		if (itemCount >= count){
 			T[] r;
 			r.length = count;
 			stackItem!(T)* ptr = lastItemPtr;
 			static if (reverse){
-				for (integer i = count-1; i >= 0; i --){
+				for (ptrdiff_t i = count-1; i >= 0; i --){
 					r[i] = (*ptr).data;
 					ptr = (*ptr).prev;
 					// delete this item
@@ -495,7 +495,7 @@ public:
 					lastItemPtr = ptr;
 				}
 			}else{
-				for (uinteger i = 0; i < count; i ++){
+				for (size_t i = 0; i < count; i ++){
 					r[i] = (*ptr).data;
 					ptr = (*ptr).prev;
 					//delete it
@@ -524,7 +524,7 @@ public:
 		itemCount = 0;
 	}
 	/// Number of items in stack
-	@property uinteger count(){
+	@property size_t count(){
 		return itemCount;
 	}
 }
@@ -559,7 +559,7 @@ private:
 	/// pointer to last item (last pushed)
 	StackElement!(T)* lastItemPtr;
 	/// stores number of elements pushed
-	uinteger _count;
+	size_t _count;
 public:
 	/// constructor
 	this (){
@@ -581,7 +581,7 @@ public:
 		_count = 0;
 	}
 	/// Returns: number of items in stack
-	@property uinteger count(){
+	@property size_t count(){
 		return _count;
 	}
 	/// pushes an element to stack
@@ -649,14 +649,14 @@ public:
 	/// Returns: the elements poped
 	/// 
 	/// Throws: Exception if stack is empty
-	T[] pop(uinteger popCount){
+	T[] pop(size_t popCount){
 		if (count == 0){
 			throw new Exception("Cannot pop from empty stack");
 		}
 		if (_count < popCount){
 			popCount = _count;
 		}
-		uinteger i = 0;
+		size_t i = 0;
 		StackElement!(T)* item = firstItemPtr;
 		T[] r;
 		r.length = popCount;
@@ -701,14 +701,14 @@ private:
 	/// stores the free objects.
 	FIFOStack!T _store;
 	/// number of elements to allocate at one time
-	uinteger _allocCount;
+	size_t _allocCount;
 	/// max number of free elements present at one time, if more are present, extra are freed
-	uinteger _maxCount;
+	size_t _maxCount;
 	/// the delegate that will be called to get a new object
 	T delegate() _initFunction;
 public:
 	/// constructor
-	this (uinteger extraAllocCount, uinteger maxAllocCount, T delegate() initFunction){
+	this (size_t extraAllocCount, size_t maxAllocCount, T delegate() initFunction){
 		_store = new FIFOStack!T;
 		_allocCount = extraAllocCount;
 		_maxCount = maxAllocCount;
@@ -728,7 +728,7 @@ public:
 		if (_store.count < _allocCount){
 			T[] allocated;
 			allocated.length = _allocCount - _store.count;
-			for (uinteger i = 0; i < allocated.length; i ++){
+			for (size_t i = 0; i < allocated.length; i ++){
 				allocated[i] = _initFunction();
 			}
 			_store.push(allocated);
@@ -768,9 +768,9 @@ private:
 	LinkedItem!(T)* nextReadPtr;//the pointer of the next item to be read
 	LinkedItem!(T)* lastReadPtr;//the pointer to the last item that was read
 
-	uinteger itemCount;//stores the total number of items
+	size_t itemCount;//stores the total number of items
 
-	LinkedItem!(T)*[uinteger] bookmarks;
+	LinkedItem!(T)*[size_t] bookmarks;
 public:
 	this(){
 		firstItemPtr = null;
@@ -823,12 +823,12 @@ public:
 			LinkedItem!(T)*[] newNodes;
 			newNodes.length = items.length;
 			// put nodes inside the LinkedItem list
-			for (uinteger i = 0; i < items.length; i++){
+			for (size_t i = 0; i < items.length; i++){
 				newNodes[i] = new LinkedItem!T;
 				(*newNodes[i]).data = items[i];
 			}
 			// make them point to their next node
-			for (uinteger i = 0, end = newNodes.length-1; i < end; i ++){
+			for (size_t i = 0, end = newNodes.length-1; i < end; i ++){
 				(*newNodes[i]).next = newNodes[i+1];
 			}
 			// make last item from newNodes point to null
@@ -905,7 +905,7 @@ public:
 				}else{
 					//we'll have to read till second-last item to get be able to remove the last item
 					LinkedItem!(T)* item = firstItemPtr;
-					for (uinteger i = 0, end = itemCount-2; i < end; i ++){
+					for (size_t i = 0, end = itemCount-2; i < end; i ++){
 						item = item.next;
 					}
 					// now `item` is pointing to second last item, make sure this is true
@@ -943,10 +943,10 @@ public:
 	/// Returns: true if was found and deleted, false if not found
 	/// 
 	/// Throws: Exception if failed to delete an element
-	bool remove(T toRemove, uinteger count=0){
+	bool remove(T toRemove, size_t count=0){
 		LinkedItem!(T)* ptr = firstItemPtr, prev = null;
 		bool r = false;
-		uinteger removedCount = 0;
+		size_t removedCount = 0;
 		// I'll just use a "hack" and use removeLastRead to remove it
 		LinkedItem!(T)* actualLastRead = lastReadPtr;
 		while (ptr && ( (count > 0 && removedCount < count) || count == 0 )){
@@ -983,7 +983,7 @@ public:
 	bool remove(T[] toRemove){
 		LinkedItem!(T)* ptr = firstItemPtr, prev = null;
 		bool r = false;
-		uinteger removedCount = 0;
+		size_t removedCount = 0;
 		// I'll just use a "hack" and use removeLastRead to remove it
 		LinkedItem!(T)* actualLastRead = lastReadPtr;
 		while (ptr){
@@ -1007,7 +1007,7 @@ public:
 		return r;
 	}
 	/// Returns: number of items that the list is holding
-	@property uinteger count(){
+	@property size_t count(){
 		return itemCount;
 	}
 	///resets the read position, i.e: set reading position to first node, and nulls the last-read-ptr
@@ -1055,7 +1055,7 @@ public:
 	/// Returns: the array formed from this list
 	T[] toArray(){
 		LinkedItem!(T)* currentNode = firstItemPtr;
-		uinteger i = 0;
+		size_t i = 0;
 		T[] r;
 		r.length = itemCount;
 		while (currentNode !is null){
@@ -1100,12 +1100,12 @@ public:
 			LinkedItem!(T)*[] newNodes;
 			newNodes.length = nodes.length;
 			// put nodes inside the LinkedItem list
-			for (uinteger i = 0; i < nodes.length; i++){
+			for (size_t i = 0; i < nodes.length; i++){
 				newNodes[i] = new LinkedItem!T;
 				(*newNodes[i]).data = nodes[i];
 			}
 			// make them point to their next node
-			for (uinteger i = 0, end = newNodes.length-1; i < end; i ++){
+			for (size_t i = 0, end = newNodes.length-1; i < end; i ++){
 				(*newNodes[i]).next = newNodes[i+1];
 			}
 			// check if has to insert at beginning or at after last-read
@@ -1152,7 +1152,7 @@ public:
 		LinkedItem!(T)* currentNode = firstItemPtr;
 		while (currentNode !is null){
 			// check if current node matches any in array
-			integer index = nodes.indexOf((*currentNode).data);
+			ptrdiff_t index = nodes.indexOf((*currentNode).data);
 			if (index >= 0){
 				// this node matched, so remove it from the array
 				nodes = nodes.deleteElement(index);
@@ -1178,12 +1178,12 @@ public:
 	/// Returns: the bookmark-ID
 	/// 
 	/// Throws: Exception if there is no last-read item
-	uinteger placeBookmark(){
+	size_t placeBookmark(){
 		if (lastReadPtr is null){
 			throw new Exception("no last-read-item to place bookmark on");
 		}else{
 			// go through bookmarks list to find empty slot, or create a new one
-			uinteger id = 0;
+			size_t id = 0;
 			while (true){
 				if (id in bookmarks){
 					id ++;
@@ -1200,7 +1200,7 @@ public:
 	/// Does NOT delete the bookmark. Use `LinkedList.removeBookmark` to delete
 	/// 
 	/// Returns: true if successful, false if the bookmark no longer exists
-	bool moveToBookmark(uinteger id){
+	bool moveToBookmark(size_t id){
 		if (id !in bookmarks){
 			return false;
 		}else{
@@ -1211,7 +1211,7 @@ public:
 	/// removes a bookmark using the bookmark id
 	/// 
 	/// Returns: true if bookmark is removed, false if it doesn't exist
-	bool removeBookmark(uinteger id){
+	bool removeBookmark(size_t id){
 		if (id !in bookmarks){
 			return false;
 		}else{
@@ -1317,7 +1317,7 @@ unittest{
 	assert(*list.read == 1);
 	assert(*list.read == 2);
 	{
-		uinteger id = list.placeBookmark;
+		size_t id = list.placeBookmark;
 		assert(*list.read == 3);
 		assert(list.moveToBookmark(id + 1) == false);
 		assert(list.moveToBookmark(id) == true);
@@ -1342,9 +1342,9 @@ unittest{
 deprecated class LogList(T){
 private:
 	List!T list;
-	uinteger readFrom, maxLen;
+	size_t readFrom, maxLen;
 public:
-	this(uinteger maxLength=100){
+	this(size_t maxLength=100){
 		list = new List!T;
 		readFrom = 0;
 		maxLen = maxLength;
@@ -1362,13 +1362,13 @@ public:
 		}
 	}
 	/// Returns: array containing items
-	T[] read(uinteger count=0){
+	T[] read(size_t count=0){
 		T[] r;
 		if (count>list.length){
 			count = list.length;
 		}
 		if (count > 0){
-			uinteger i;
+			size_t i;
 			if (count>list.length){
 				count = list.length;
 			}
@@ -1387,7 +1387,7 @@ public:
 		readFrom = 0;
 	}
 	/// Returns: the max number of items that can be stored
-	@property uinteger maxCapacity(){
+	@property size_t maxCapacity(){
 		return maxLen;
 	}
 }
@@ -1400,9 +1400,9 @@ public:
 private:
 	File file; /// the file currently loaded
 	bool closeOnDestroy; /// stores if the file will be closed when this object is destroyed
-	uinteger _minSeek; /// stores the minimum value of seek, if zero, it has no effect
-	uinteger _maxSeek; /// stores the maximum value of seek, if zero, it has no effect
-	uinteger _maxSize; /// stores the max size of the file in case _minSeek and _maxSeek are set non-zero
+	size_t _minSeek; /// stores the minimum value of seek, if zero, it has no effect
+	size_t _maxSeek; /// stores the maximum value of seek, if zero, it has no effect
+	size_t _maxSize; /// stores the max size of the file in case _minSeek and _maxSeek are set non-zero
 	string _filename; /// the filename of the file opened
 public:
 	/// prepares a file for reading/writing through this class
@@ -1444,7 +1444,7 @@ public:
 	/// `f` if the File to do reading/writing on  
 	/// `minSeek` is the index from where reading/writing can begin from.
 	/// `maxSeek` is the index after which no reading writing can be done.
-	this (File f, uinteger minSeek, uinteger maxSeek){
+	this (File f, size_t minSeek, size_t maxSeek){
 		file = f;
 		assert (minSeek < maxSeek, "minSeek must be smaller than maxSeek");
 		this._minSeek = minSeek;
@@ -1461,7 +1461,7 @@ public:
 	/// Throws: Exception if this FileReader is only for a segment and it tries to access outdside that segment
 	/// 
 	/// Returns: true if lock was successful, false if already locked
-	bool lock(uinteger start, uinteger length){
+	bool lock(size_t start, size_t length){
 		if (_minSeek + _maxSeek > 0){
 			start = start + _minSeek;
 		}
@@ -1483,7 +1483,7 @@ public:
 	/// unlocks a file segment
 	/// 
 	/// Throws: Exception if this FileReader is only for a segment and it tries to access outdside that segment
-	void unlock (uinteger start, uinteger length){
+	void unlock (size_t start, size_t length){
 		if (_minSeek + _maxSeek > 0){
 			start = start + _minSeek;
 		}
@@ -1506,7 +1506,7 @@ public:
 	/// Returns: the bytes read. If there were not enough bytes left to read in the file, an array of smaller size is returned
 	///
 	/// Throws: Exception (ErrnoException) in case of an error
-	ubyte[] read (uinteger n){
+	ubyte[] read (size_t n){
 		ubyte[] buffer;
 		buffer.length = this.size - this.seek > n ? n : this.size - this.seek;
 		file.rawRead(buffer);
@@ -1548,7 +1548,7 @@ public:
 	/// `chunkSize` is the number of bytes to shift in one iteration
 	/// 
 	/// Returns: true if done, false if not, or index was out of bounds TODO add tests for this
-	bool remove (uinteger index, uinteger length){
+	bool remove (size_t index, size_t length){
 		if (this.size <= index || this.size - index < length)
 			return false;
 		try{
@@ -1583,7 +1583,7 @@ public:
 	/// `onFailTrySlow` if true, when `SetEndOfFile` or `ftruncate` fails, it'll use a slower method that might work
 	/// 
 	/// Returns: true if file was truncated, false if not, for example if the file size was less than newSize TODO add tests
-	bool truncate(uinteger newSize, bool onFailTrySlow=false){
+	bool truncate(size_t newSize, bool onFailTrySlow=false){
 		if (_minSeek + _maxSeek != 0 || newSize < this.size){
 			return false;
 		}
@@ -1594,7 +1594,7 @@ public:
 			}
 			version (Windows){
 				import core.sys.windows.windows: SetEndOfFile;
-				uinteger oldSeek = this.seek;
+				size_t oldSeek = this.seek;
 				this.seek = newSize-1;
 				SetEndOfFile (file.HANDLE);
 				this.seek = oldSeek;
@@ -1674,7 +1674,7 @@ unittest{
 	assert (fread.read(cast(ubyte)0) == [1,2,4,5,6,7,8,0]);
 	assert (fread.seek == 8);
 	/// test read-number of bytes
-	assert (fread.read(cast(uinteger)5) == [8,7,6,5,4]);
+	assert (fread.read(cast(size_t)5) == [8,7,6,5,4]);
 	assert (fread.seek == 13);
 	assert (fread.read(999) == [3,2,1]);
 	/// test move-seek and read
@@ -1691,15 +1691,15 @@ unittest{
 class ByteStream{
 private:
 	ubyte[] _stream;
-	uinteger _seek;
+	size_t _seek;
 	bool _grow;
-	uinteger _maxSize;
+	size_t _maxSize;
 public:
 	/// constructor
 	/// 
 	/// `grow` is whether the stream is allowed to grow in size while writing  
 	/// `maxSize` is the maximum size stream is allowed to grow to (0 for no limit)
-	this(bool grow = true, uinteger maxSize = 0){
+	this(bool grow = true, size_t maxSize = 0){
 		_grow = grow;
 		_maxSize = maxSize;
 	}
@@ -1707,11 +1707,11 @@ public:
 		.destroy(_stream);
 	}
 	/// Seek position (i.e: next read/write index)
-	@property uinteger seek(){
+	@property size_t seek(){
 		return _seek;
 	}
 	/// ditto
-	@property uinteger seek(uinteger newVal){
+	@property size_t seek(size_t newVal){
 		return _seek = newVal > _stream.length ? _stream.length : newVal;
 	}
 	/// if the stream is allowed to grow in size while writing
@@ -1725,11 +1725,11 @@ public:
 	/// maximum size stream is allowed to grow to, 0 for no limit.  
 	/// 
 	/// This is enforced while writing, or changing `ByteStream.size`
-	@property uinteger maxSize(){
+	@property size_t maxSize(){
 		return _maxSize;
 	}
 	/// ditto
-	@property uinteger maxSize(uinteger newVal){
+	@property size_t maxSize(size_t newVal){
 		_maxSize = newVal;
 		if (_seek > _maxSize)
 			_seek = _maxSize;
@@ -1744,11 +1744,11 @@ public:
 		return _stream = newVal;
 	}
 	/// Size, in bytes, of stream
-	@property uinteger size(){
+	@property size_t size(){
 		return _stream.length;
 	}
 	/// Size, setter. if new size is >maxSize, size is set to maxSize
-	@property uinteger size(uinteger newVal){
+	@property size_t size(size_t newVal){
 		_stream.length = _maxSize < newVal ? _maxSize : newVal;
 		if (_seek > _stream.length)
 			_seek = _stream.length;
@@ -1784,8 +1784,8 @@ public:
 	/// Reads a slice from the stream into buffer. Will read number of bytes so as to fill `buffer`
 	/// 
 	/// Returns: number of bytes read
-	uinteger readRaw(ubyte[] buffer){
-		immutable uinteger len = _seek + buffer.length > _stream.length ? _stream.length - _seek : buffer.length;
+	size_t readRaw(ubyte[] buffer){
+		immutable size_t len = _seek + buffer.length > _stream.length ? _stream.length - _seek : buffer.length;
 		buffer[0 .. len] = _stream[_seek .. _seek + len];
 		_seek += len;
 		return len;
@@ -1796,17 +1796,17 @@ public:
 	/// Sets `incompleteRead` to true if there were less bytes in stream that T.sizeof
 	/// 
 	/// Returns: the data read at position
-	T readAt(T)(uinteger at, ref bool incompleteRead){
+	T readAt(T)(size_t at, ref bool incompleteRead){
 		ByteUnion!T r;
-		immutable uinteger prevSeek = _seek;
+		immutable size_t prevSeek = _seek;
 		at = at > _stream.length ? _stream.length : at;
-		immutable uinteger len = at + r.array.length > _stream.length ? _stream.length - at : r.array.length;
+		immutable size_t len = at + r.array.length > _stream.length ? _stream.length - at : r.array.length;
 		incompleteRead = len < r.array.length;
 		r.array[0 .. len] = _stream[at .. at + len];
 		return r.data;
 	}
 	/// ditto
-	T readAt(T)(uinteger at){
+	T readAt(T)(size_t at){
 		bool dummyBool;
 		return readAt!T(at, dummyBool);
 	}
@@ -1819,7 +1819,7 @@ public:
 	/// Returns: the read data
 	T read(T)(ref bool incompleteRead, ubyte n=0){
 		ByteUnion!T u;
-		uinteger readCount;
+		size_t readCount;
 		if (n == 0 || n > T.sizeof)
 			readCount = readRaw(u.array);
 		else
@@ -1841,8 +1841,8 @@ public:
 	/// `n` is the number of bytes to read for length of array, default(`0`) is `size_t.sizeof`
 	/// 
 	/// Returns: the read array
-	T[] readArray(T)(ref uinteger readCount, ubyte n=0){
-		immutable uinteger len = read!uinteger(n);
+	T[] readArray(T)(ref size_t readCount, ubyte n=0){
+		immutable size_t len = read!size_t(n);
 		T[] r;
 		r.length = len / T.sizeof;
 		readCount = readRaw((cast(ubyte*)r.ptr)[0 .. r.length * T.sizeof]) / T.sizeof;
@@ -1850,7 +1850,7 @@ public:
 	}
 	/// ditto
 	T[] readArray(T)(ubyte n=0){
-		uinteger dummyUint;
+		size_t dummyUint;
 		return readArray!T(dummyUint, n);
 	}
 	/// Writes data at seek. **Do not use this for arrays**
@@ -1861,7 +1861,7 @@ public:
 	bool write(T)(T data, ubyte n=0){
 		ByteUnion!T u;
 		u.data = data;
-		immutable uinteger newSize = _seek + (n == 0 ? u.array.length : n); // size after writing
+		immutable size_t newSize = _seek + (n == 0 ? u.array.length : n); // size after writing
 		if (newSize > _stream.length){
 			if (!_grow || (_maxSize && newSize > _maxSize))
 				return false;
@@ -1886,8 +1886,8 @@ public:
 	/// Writes an array without its size.
 	/// 
 	/// Returns: number of bytes written, **not the number of elements**
-	uinteger writeRaw(T)(T[] data){
-		uinteger len = data.length * T.sizeof;
+	size_t writeRaw(T)(T[] data){
+		size_t len = data.length * T.sizeof;
 		if (_seek + len > _stream.length){
 			if (!_grow)
 				len = _stream.length - _seek;
@@ -1905,9 +1905,9 @@ public:
 	/// Will append to end of stream if `at` is outside stream
 	/// 
 	/// Returns: true if written successfully, false if not
-	bool writeAt(T)(uinteger at, T data, ubyte n = 0){
+	bool writeAt(T)(size_t at, T data, ubyte n = 0){
 		// writing is bit complicated, so just use `write` and change seek back to original after
-		immutable uinteger prevSeek = _seek;
+		immutable size_t prevSeek = _seek;
 		_seek = at > _stream.length ? _stream.length : at;
 		immutable bool r = this.write(data, n);
 		_seek = prevSeek;
@@ -1919,7 +1919,7 @@ public:
 	/// 
 	/// Returns: true if written, false if not (due to maxSize reached or not allowed to grow)
 	bool writeArray(T)(T[] data, ubyte n=0){
-		immutable uinteger newSize = _seek + (n == 0 ? uinteger.sizeof : n) + (data.length * T.sizeof);
+		immutable size_t newSize = _seek + (n == 0 ? size_t.sizeof : n) + (data.length * T.sizeof);
 		if (newSize > _stream.length){
 			if (!_grow || (_maxSize && newSize > _maxSize))
 				return false;
@@ -2009,9 +2009,9 @@ struct TreeReader(T){
 	/// counts and returns number of nodes in the tree
 	/// 
 	/// Returns: the number of nodes in the tree, counting all child-nodes and their child-nodes and so on
-	uinteger count(){
+	size_t count(){
 		// stores the count
-		uinteger r = 0;
+		size_t r = 0;
 		/// used to "receive" nodes from iterate
 		bool increaseCount(TreeNode!(T)* node){
 			r ++;
@@ -2026,9 +2026,9 @@ struct TreeReader(T){
 	/// if `doCount` is not null, only nodes for which `doCount` function returns true will be counted
 	/// 
 	/// Returns: number of nodes for which `doCount(node)` returned true
-	uinteger count(bool function(TreeNode!(T)*) doCount=null){
+	size_t count(bool function(TreeNode!(T)*) doCount=null){
 		/// stores the count
-		uinteger r = 0;
+		size_t r = 0;
 		/// used to "receive" nodes from iterate
 		bool increaseCount(TreeNode!(T)* node){
 			if (doCount !is null && (*doCount)(node)){
