@@ -34,7 +34,7 @@ T[] partialSort(alias val = "a", T)(T[] input, ulong count){
 unittest{
 	uint[] input = [7, 0, 5, 4, 6, 8, 9];
 	assert(partialSort(input, 1) == [0]);
-	assert(partialSort(input, 2) == [0, 4], partialSort(input, 2).to!string);
+	assert(partialSort(input, 2) == [0, 4]);
 	assert(partialSort(input, 3) == [0, 4, 5]);
 	assert(partialSort(input, 4) == [0, 4, 5, 6]);
 }
@@ -57,21 +57,32 @@ T[] radixSort(alias val = "a", T)(T[] input){
 	}
 	return input;
 }
+/// 
+unittest{
+	uint[] input = [7, 0, 5, 4, 6, 8, 9];
+	assert(radixSort(input) == [0, 4, 5, 6, 7, 8, 9]);
+}
 
 /// merge sort
-T[] mergeSort(alias less = "a < b", T)(T[] arr, ulong maxLen = 0){
+T[] mergeSort(alias val = "a", T)(T[] arr, ulong maxLen = 0){
+	alias valGet = unaryFun!val;
 	if (arr.length == 1){
 		return arr;
 	}
 	if (arr.length == 2){
-		if (binaryFun!less(arr[0], arr[1]))
+		if (valGet(arr[0]) < valGet(arr[1]))
 			return arr;
 		return [arr[1], arr[0]];
 	}
 	ulong mid = (arr.length + 1) / 2;
-	return merge!less(mergeSort!less(arr[0 .. mid], maxLen),
-					mergeSort!less(arr[mid .. $], maxLen),
+	return merge!val(mergeSort!val(arr[0 .. mid], maxLen),
+					mergeSort!val(arr[mid .. $], maxLen),
 					maxLen);
+}
+/// 
+unittest{
+	uint[] input = [7, 0, 5, 4, 6, 8, 9];
+	assert(mergeSort(input) == [0, 4, 5, 6, 7, 8, 9]);
 }
 
 /// Merge 2 sorted arrays of same length, into a third array, of same length.
@@ -85,17 +96,23 @@ T[] mergeEq(alias val = "a", T)(T[] A, T[] B){
 		R[i] = valGet(A[a]) < valGet(B[b]) ? A[a ++] : B[b ++];
 	return R;
 }
+///
+unittest{
+	uint[] A = [0, 5, 7]; // sorted array
+	uint[] B = [4, 6, 8]; // also sorted
+	assert(mergeEq(A, B) == [0, 4, 5]);
+}
 
 /// Merge 2 sorted arrays.
 /// 
 /// if maxLen is non zero, only first maxLen number of elements are returned.
 /// using maxLen should give slight performance benefit
-T[] merge(alias val = "a", T)(T[] A, T[] B, ulong maxLen = 0){
+T[] merge(alias val = "a", T)(T[] A, T[] B, size_t maxLen = 0){
 	alias valGet = unaryFun!val;
 	T[] R;
 	R.length = maxLen && maxLen < A.length + B.length ? maxLen : A.length + B.length;
 
-	ulong a, b, i;
+	size_t a, b, i;
 	if (A.length && B.length){
 		while (i < R.length){
 			if (valGet(A[a]) < valGet(B[b])){
@@ -115,4 +132,11 @@ T[] merge(alias val = "a", T)(T[] A, T[] B, ulong maxLen = 0){
 		R[i .. $] = B[b .. b + R.length - i];
 	}
 	return R;
+}
+///
+unittest{
+	uint[] A = [0, 5, 7]; // sorted array
+	uint[] B = [4, 6, 8, 9]; // also sorted, not same length
+	assert(merge(A, B) == [0, 4, 5, 6, 7, 8, 9]);
+	assert(merge(A, B, 4) == [0, 4, 5, 6]);
 }
