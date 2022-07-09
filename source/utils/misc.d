@@ -9,6 +9,9 @@ import std.path;
 import std.datetime;
 import std.datetime.stopwatch;
 import std.string : format, chomp;
+import std.traits;
+import std.conv : to;
+import std.algorithm;
 
 import utils.ds;
 public import utils.ds : ByteUnion;
@@ -53,6 +56,74 @@ Times bench(void delegate() func, ulong runs = 100_000){
 	return time;
 }
 
+
+/// Generates combinations for enum with bitflag members
+/// T, the enum, must have base type as ulong
+ulong[] combinations(T)(ulong alwaysIncluded = 0, ulong alwaysExcluded = 0)
+		if (is(T == enum) && is(OriginalType!(Unqual!T) == ulong)){
+	ulong[] ret;
+	immutable ulong ignore = alwaysIncluded & ~alwaysExcluded;
+	ulong val = ignore;
+	do{
+		foreach (i; EnumMembers!T){
+			if (i & ignore)
+				continue;
+			if (i & val){
+				val &= ~i;
+			}else{
+				val |= i;
+				break;
+			}
+		}
+		ret ~= val;
+	}while (val != ignore);
+	return ret;
+}
+///
+unittest{
+	enum Vals : ulong{
+		One		= 1,
+		Two		= 2,
+		Four	= 4,
+		Eight	= 8,
+	}
+	ulong[] list = combinations!Vals();
+	foreach (i; 0 .. 16)
+		assert(list.canFind(i));
+	assert(list.length == 16);
+}
+
+/// Converts bitflags to comma separated readable string for enums
+/// T is an enum, with ulong base type
+string bitmaskToString(T, char ENCLOSE=0)(ulong flags)
+		if (is(T == enum) && is(OriginalType!(Unqual!T) == ulong)){
+	string str;
+	foreach (i; EnumMembers!T){
+		if (i & flags){
+			static if (ENCLOSE == 0)
+				str ~= to!string(i) ~ ',';
+			else
+				str ~= ENCLOSE ~ to!string(i) ~ ENCLOSE ~ ',';
+		}
+	}
+	if (str.length)
+		return str[0 .. $ - 1];
+	return str;
+}
+///
+unittest{
+	enum Vals : ulong{
+		One			=	1,
+		Two			=	2,
+		Four		=	4,
+		ThirtyTwo	=	32
+	}
+	assert (bitmaskToString!Vals(3) == "One,Two");
+	assert (bitmaskToString!Vals(33) == "One,ThirtyTwo");
+	assert (bitmaskToString!(Vals,'`')(3) == "`One`,`Two`");
+	assert (bitmaskToString!(Vals,'`')(33) == "`One`,`ThirtyTwo`");
+}
+
 /// Reads a file into array of string
 ///
 /// each element in the returned array is a separate line, excluding the trailing `\n` character
@@ -92,7 +163,6 @@ void arrayToFile(string[] array, string fname, string toApp = "\n"){
 /// 
 /// Returns: the absolute paths of the files/dirs modified after the time
 deprecated string[] filesModified(string filePath, SysTime lastTime, string[] exclude = []){
-	import std.algorithm;
 	import std.array;
 	
 	// make sure the filePath is not in exclude
@@ -208,10 +278,10 @@ unittest{
 deprecated bool hasElement(T)(T[] array, T element){
 	foreach(cur; array){
 		if (cur == element){
-			return false;
+			return true;
 		}
 	}
-	return true;
+	return false;
 }
 ///
 unittest{
