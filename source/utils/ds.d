@@ -1138,21 +1138,24 @@ public:
 		return r;
 	}
 	/// matches all elements from an array to elements in list, to see if all elements in array are present in the list
+	/// **poorly written, avoid using**
 	///  
 	/// If the same element is present at more than one index in array, it won't work
 	/// 
 	/// Returns: true if list contains all elements provided in an array, else, false
-	bool hasElements(T[] nodes){
-		bool r = false;
+	deprecated bool hasElements(T[] nodes){
 		nodes = nodes.dup;
 		// go through the list and match as many elements as possible
 		LinkedItem!(T)* currentNode = firstItemPtr;
 		while (currentNode !is null){
 			// check if current node matches any in array
-			ptrdiff_t index = nodes.indexOf((*currentNode).data);
+			immutable ptrdiff_t index = nodes.indexOf((*currentNode).data);
 			if (index >= 0){
 				// this node matched, so remove it from the array
-				nodes = nodes.deleteElement(index);
+				if (index + 1 == nodes.length)
+					nodes = nodes[0 .. index];
+				else
+					nodes = nodes[0 .. index] ~ nodes[index + 1 .. $];
 			}
 			// check if all elements have been checked against
 			if (nodes.length == 0){
@@ -1161,11 +1164,7 @@ public:
 			// move to next node
 			currentNode = (*currentNode).next;
 		}
-		// Now check if the nodes array is empty, if yes, then all nodes were matched
-		if (nodes.length == 0){
-			r = true;
-		}
-		return r;
+		return nodes.length == 0;
 	}
 	/// Sets a "bookmark"
 	/// 

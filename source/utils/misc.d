@@ -61,21 +61,11 @@ Times bench(void delegate() func, ulong runs = 100_000){
 /// 
 /// Throws: Exception on failure
 string[] fileToArray(string fname){
-	File f = File(fname,"r");
+	File f = File(fname, "r");
 	string[] r;
-	string line;
-	ptrdiff_t i=0;
-	r.length=0;
-	while (!f.eof()){
-		if (i+1>=r.length){
-			r.length+=5;
-		}
-		line=f.readln.chomp("\n");
-		r[i]=line;
-		i++;
-	}
-	f.close;
-	r.length = i;
+	while (!f.eof())
+		r ~= f.readln.chomp("\n");
+	f.close();
 	return r;
 }
 
@@ -84,13 +74,11 @@ string[] fileToArray(string fname){
 /// If a file already exists, it will be overwritten, and `\n` is added at end of each string
 /// 
 /// Throws: exception on failure
-void arrayToFile(string[] array, string fname){
+void arrayToFile(string[] array, string fname, string toApp = "\n"){
 	File f = File(fname,"w");
-	size_t i;
-	for (i=0;i<array.length;i++){
-		f.write(array[i],'\n');
-	}
-	f.close;
+	foreach (val; array)
+		f.write(val, toApp);
+	f.close();
 }
 
 /// uses `listdir` to list files/dirs in a dir, and filters the ones that were modified after a given time
@@ -103,7 +91,7 @@ void arrayToFile(string[] array, string fname){
 /// `exclude` is a list of files/dirs to not to include in the check  
 /// 
 /// Returns: the absolute paths of the files/dirs modified after the time
-string[] filesModified(string filePath, SysTime lastTime, string[] exclude = []){
+deprecated string[] filesModified(string filePath, SysTime lastTime, string[] exclude = []){
 	import std.algorithm;
 	import std.array;
 	
@@ -151,7 +139,7 @@ string[] filesModified(string filePath, SysTime lastTime, string[] exclude = [])
 /// only dirs and files are returned, symlinks are ignored
 /// 
 /// Returns: an array containing absolute paths of files/dirs
-string[] listDir(string pathname){
+deprecated string[] listDir(string pathname){
 	import std.algorithm;
 	import std.array;
 
@@ -215,35 +203,30 @@ unittest{
 }
 
 /// Returns: true if an aray has an element, false if no
-bool hasElement(T)(T[] array, T element){
-	bool r = false;
+///
+/// Deprecated: use std.algorithm.canFind
+deprecated bool hasElement(T)(T[] array, T element){
 	foreach(cur; array){
 		if (cur == element){
-			r = true;
-			break;
+			return false;
 		}
 	}
-	return r;
+	return true;
 }
 ///
 unittest{
 	assert([0, 1, 2].hasElement(2) == true);
 	assert([0, 1, 2].hasElement(4) == false);
 }
+
 /// Returns: true if array contains all elements provided in an array, else, false
 bool hasElement(T)(T[] array, T[] elements){
-	bool r = true;
-	elements = elements.dup;
 	// go through the list and match as many elements as possible
-	for (size_t i = 0; i < elements.length; i ++){
-		// check if it exists in array
-		size_t index = array.indexOf(elements[i]);
-		if (index == -1){
-			r = false;
-			break;
-		}
+	foreach (val; elements){
+		if (array.indexOf(val) == -1)
+			return false;
 	}
-	return r;
+	return true;
 }
 ///
 unittest{
@@ -252,6 +235,7 @@ unittest{
 	assert([0, 1, 2].hasElement([1, 2]) == true);
 	assert([0, 1, 2].hasElement([2, 4]) == false);
 }
+
 /// Checks if all elements present in an array are also present in another array
 /// 
 /// Index, and the number of times the element is present in each array doesn't matter
@@ -263,14 +247,11 @@ unittest{
 ///
 /// Returns: true if all elements present in `toMatch` are also present in `elements`
 bool matchElements(T)(T[] toMatch, T[] elements){
-	bool r = true;
 	foreach(currentToMatch; toMatch){
-		if (!elements.hasElement(currentToMatch)){
-			r = false;
-			break;
-		}
+		if (!elements.hasElement(currentToMatch))
+			return false;
 	}
-	return r;
+	return true;
 }
 ///
 unittest{
@@ -280,17 +261,11 @@ unittest{
 
 /// Returns: the index of an element in an array, negative one if not found
 ptrdiff_t indexOf(T)(T[] array, T element){
-	ptrdiff_t i;
-	for (i = 0; i < array.length; i++){
-		if (array[i] == element){
-			break;
-		}
+	foreach (i, val; array){
+		if (val == element)
+			return i;
 	}
-	//check if it was not found, and the loop just ended
-	if (i >= array.length || array[i] != element){
-		i = -1;
-	}
-	return i;
+	return -1;
 }
 ///
 unittest{
@@ -311,7 +286,7 @@ unittest{
 /// 
 /// Throws: Exception if the bracket is not found
 size_t bracketPos(T, bool forward=true)
-(T[] s, size_t index, T[] opening=['[','{','('], T[] closing=[']','}',')']){
+		(T[] s, size_t index, T[] opening=['[','{','('], T[] closing=[']','}',')']){
 	Stack!T brackets = new Stack!T;
 	size_t i = index;
 	for (immutable size_t lastInd = (forward ? s.length : 0); i != lastInd; (forward ? i ++: i --)){
@@ -336,56 +311,6 @@ size_t bracketPos(T, bool forward=true)
 unittest{
 	assert ((cast(char[])"hello(asdf[asdf])").bracketPos(5) == 16);
 	assert ((cast(char[])"hello(asdf[asdf])").bracketPos(10) == 15);
-}
-
-/// Removes a number of elements starting from an index
-/// 
-/// No range checks are done, so an IndexOutOfBounds may occur
-///
-/// Returns: the modified array
-T[] deleteElement(T)(T[] dat, size_t pos, size_t count=1){
-	T[] ar1, ar2;
-	ar1 = dat[0..pos];
-	ar2 = dat[pos+count..dat.length];
-	return ar1~ar2;
-}
-///
-unittest{
-	assert([0, 1, 2].deleteElement(1) == [0, 2]);
-	assert([0, 1, 2].deleteElement(0, 2) == [2]);
-}
-
-/// Inserts an array into another array, at a provided index
-/// 
-/// No range checks are done, so an IndexOutOfBounds may occur
-///
-/// Returns: the modified array
-T[] insertElement(T)(T[] dat, T[] toInsert, size_t pos){
-	T[] ar1, ar2;
-	ar1 = dat[0..pos];
-	ar2 = dat[pos..dat.length];
-	return ar1~toInsert~ar2;
-}
-///
-unittest{
-	assert([0, 2].insertElement([1, 1], 1) == [0, 1, 1, 2]);
-	assert([2].insertElement([0, 1], 0) == [0, 1, 2]);
-}
-/// Inserts an element into an array
-/// 
-/// No range checks are done, so an IndexOutOfBounds may occur
-///
-/// Returns: the modified array
-T[] insertElement(T)(T[] dat, T toInsert, size_t pos){
-	T[] ar1, ar2;
-	ar1 = dat[0..pos];
-	ar2 = dat[pos..dat.length];
-	return ar1~[toInsert]~ar2;
-}
-///
-unittest{
-	assert([0, 2].insertElement(1, 1) == [0, 1, 2]);
-	assert([2].insertElement(1, 0) == [1, 2]);
 }
 
 /*
@@ -453,10 +378,8 @@ unittest{
 /// Returns: true if a string is a number
 bool isNum(string s, bool allowDecimalPoint=true){
 	bool hasDecimalPoint = false;
-	if (!allowDecimalPoint){
+	if (!allowDecimalPoint)
 		hasDecimalPoint = true; // just a hack that makes it return false on "seeing" decimal point
-	}
-	s = s.dup;
 	if (s.length > 0 && s[0] == '-')
 		s = s[1 .. $];
 	if (s.length == 0)
@@ -489,12 +412,11 @@ unittest{
 
 /// Returns: a string with all uppercase alphabets converted into lowercase
 string lowercase(string s){
-	static const ubyte diff = 'a' - 'A';
+	static immutable ubyte diff = 'a' - 'A';
 	char[] r = (cast(char[])s).dup;
-	foreach (i, c; r){
-		if (c >= 'A' && c <= 'Z'){
-			r[i] = cast(char)(c+diff);
-		}
+	foreach (ref c; r){
+		if (c >= 'A' && c <= 'Z')
+			c = cast(char)(c+diff);
 	}
 	return cast(string)r;
 }
@@ -506,8 +428,6 @@ unittest{
 
 /// Returns: true if all characters in a string are alphabets, uppercase, lowercase, or both
 bool isAlphabet(string s){
-	size_t i;
-	bool r=true;
 	foreach (c; s){
 		if ((c < 'a' || c > 'z') && (c < 'A' || c > 'Z')){
 			return false;
