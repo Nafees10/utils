@@ -59,17 +59,20 @@ Times bench(void delegate() func, ulong runs = 100_000){
 
 /// mangles an unsigned integer, using a key.
 /// is reversible. calling this on a mangled integer will un-mangle it
-ulong mangle(ulong val, ulong key){
-	ulong ret = ~key & val;
-	for (ubyte i = 0; i < 64; i ++){
+size_t mangle(size_t val, size_t key){
+	static const bits = size_t.sizeof * 8;
+	size_t ret = ~key & val;
+	for (ubyte i = 0; i < bits; i ++){
 		if ((key >> i) & 1){
 			immutable ubyte s1 = i;
-			for (i ++; i < 64; i ++){
+			for (i ++; i < bits; i ++){
 				if ((key >> i) & 1)
 					break;
 			}
-			if (i == 64)
+			if (i == size_t.sizeof * 8){
+				ret |= ((val >> s1) & 1) << s1;
 				break;
+			}
 			immutable ubyte s2 = i;
 			// magic:
 			ret |= (((val >> s2) & 1) << s1) | (((val >> s1) & 1) << s2);
@@ -84,19 +87,34 @@ unittest{
 	assert(mangle(mangle(0b0010, 0b0011), 0b0011) == 0b0010);
 
 	size_t val = uniform(0, size_t.max), key = uniform(0, size_t.max);
-	assert(mangle(mangle(val, key), key) == val);
+	assert(mangle(mangle(val, key), key) == val, val.to!string ~ ' ' ~ key.to!string);
 }
 
 /// mangles using a key available at compile time.
 /// is reversible, calling mangled integer with same key will return un-mangled integer
-T mangle(alias key, T)(T val) pure if (isNumeric!(typeof(key)) && isNumeric!T){
-	static ushort[T.sizeof * 4] swapPos(T key) pure{
-		ushort[T.sizeof * 4] ret;
+size_t mangle(size_t key)(size_t val) pure{
+	static size_t rmOdd(size_t key) pure{
+		size_t ret;
+		for (ubyte i = 0; i < size_t.sizeof * 8; i ++){
+			if ((key >> i) & 1){
+				immutable ubyte s1 = i;
+				for (i ++; i < size_t.sizeof * 8; i ++){
+					if ((key >> i) & 1){
+						ret |= (1LU << s1) | (1LU << i);
+						break;
+					}
+				}
+			}
+		}
+		return ret;
+	}
+	static ushort[size_t.sizeof * 4] swapPos(size_t key) pure{
+		ushort[size_t.sizeof * 4] ret;
 		ubyte count;
-		for (ubyte i = 0; i < T.sizeof * 8; i ++){
+		for (ubyte i = 0; i < size_t.sizeof * 8; i ++){
 			if ((key >> i) & 1){
 				immutable ubyte index = i;
-				for (i ++; i < T.sizeof * 8; i ++){
+				for (i ++; i < size_t.sizeof * 8; i ++){
 					if ((key >> i) & 1){
 						ret[count++] = cast(ushort)((i << 8) | index);
 						break;
@@ -106,8 +124,9 @@ T mangle(alias key, T)(T val) pure if (isNumeric!(typeof(key)) && isNumeric!T){
 		}
 		return ret;
 	}
-	static const ushort[T.sizeof * 4] swaps = swapPos(key);
-	T ret = ~key & val;
+	static const actualKey = rmOdd(key);
+	static const ushort[size_t.sizeof * 4] swaps = swapPos(actualKey);
+	size_t ret = ~actualKey & val;
 	static foreach (pos; swaps){
 		static if (pos){
 			ret |=  (((val >> (pos & ubyte.max)) & 1) << ((pos >> 8) & ubyte.max))|
