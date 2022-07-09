@@ -12,6 +12,7 @@ import std.string : format, chomp;
 import std.traits;
 import std.conv : to;
 import std.algorithm;
+import std.functional;
 
 import utils.ds;
 public import utils.ds : ByteUnion;
@@ -56,6 +57,73 @@ Times bench(void delegate() func, ulong runs = 100_000){
 	return time;
 }
 
+/// mangles an unsigned integer, using a key.
+/// is reversible. calling this on a mangled integer will un-mangle it
+ulong mangle(ulong val, ulong key){
+	ulong ret = ~key & val;
+	for (ubyte i = 0; i < 64; i ++){
+		if ((key >> i) & 1){
+			immutable ubyte s1 = i;
+			for (i ++; i < 64; i ++){
+				if ((key >> i) & 1)
+					break;
+			}
+			if (i == 64)
+				break;
+			immutable ubyte s2 = i;
+			// magic:
+			ret |= (((val >> s2) & 1) << s1) | (((val >> s1) & 1) << s2);
+		}
+	}
+	return ret;
+}
+/// 
+unittest{
+	import std.random : uniform;
+	assert(mangle(0b0010, 0b0011) == 0b0001);
+	assert(mangle(mangle(0b0010, 0b0011), 0b0011) == 0b0010);
+
+	size_t val = uniform(0, size_t.max), key = uniform(0, size_t.max);
+	assert(mangle(mangle(val, key), key) == val);
+}
+
+/// mangles using a key available at compile time.
+/// is reversible, calling mangled integer with same key will return un-mangled integer
+T mangle(alias key, T)(T val) pure if (isNumeric!(typeof(key)) && isNumeric!T){
+	static ushort[T.sizeof * 4] swapPos(T key) pure{
+		ushort[T.sizeof * 4] ret;
+		ubyte count;
+		for (ubyte i = 0; i < T.sizeof * 8; i ++){
+			if ((key >> i) & 1){
+				immutable ubyte index = i;
+				for (i ++; i < T.sizeof * 8; i ++){
+					if ((key >> i) & 1){
+						ret[count++] = cast(ushort)((i << 8) | index);
+						break;
+					}
+				}
+			}
+		}
+		return ret;
+	}
+	static const ushort[T.sizeof * 4] swaps = swapPos(key);
+	T ret = ~key & val;
+	static foreach (pos; swaps){
+		static if (pos){
+			ret |=  (((val >> (pos & ubyte.max)) & 1) << ((pos >> 8) & ubyte.max))|
+					(((val >> ((pos >> 8) & ubyte.max)) & 1) << (pos & ubyte.max));
+		}
+	}
+	return ret;
+}
+/// 
+unittest{
+	import std.random : uniform;
+	
+	size_t val = uniform(0, size_t.max);
+	immutable size_t key = 2_294_781_104_715_578_999;
+	assert(mangle!key(mangle!key(val)) == val);
+}
 
 /// Generates combinations for enum with bitflag members
 /// T, the enum, must have base type as ulong
