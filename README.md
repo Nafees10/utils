@@ -4,15 +4,15 @@ All of the code is commented well enough, and you can use ddoc to generate docum
 
 ---
 
-## `utils.baseconv`
-A module contaning some functions to convert between Hex, Binary, and Denary.  
-
----
-
 ## `utils.ds`
-Some data structures.
+Some data structures (LinkedList, Stack, FIFOStack ...)
 
 ---
 
 ## `utils.misc`
-Contains some misc. functions, mostly for dealing with dynamic arrays
+Contains some misc. functions
+
+---
+
+## `utils.sort`
+Some sorting algorithms & functions to work with. Includes merge sort, radix sort, and a partial sort.
