@@ -7,6 +7,7 @@ import std.file;
 import std.stdio;
 import std.conv : to;
 import utils.misc;
+import std.traits;
 
 /// Used to read some data type as `ubyte[x]`
 union ByteUnion(T){
@@ -20,6 +21,124 @@ union ByteUnion(T){
 	this(ubyte[T.sizeof] array){
 		this.array = array;
 	}
+}
+
+/// Stores bit flags against each enum member.
+/// 
+/// Use methods:
+/// * `get!(Enum.Member)`
+/// * `set!(Enum.Member)(true or false)`
+struct Flags(T) if (is(T == enum)){
+	/// flags byte array
+	private ubyte[(EnumMembers!T.length  + 7) / 8] _flags;
+	/// Returns: number of flags stored
+	size_t count(){
+		return (EnumMembers!T).length;
+	}
+	/// Returns: boolean value against an enum member
+	public bool get(T val)() const{
+		enum ptrdiff_t index = [EnumMembers!T].indexOf(val);
+		static if (index < 0)
+			static assert(0, val.to!string ~ " is not a member of enum " ~ T.stringof);
+		enum size_t acInd = index / 8;
+		enum size_t shift = index - (acInd * 8);
+		return (_flags[acInd] >> shift) & 1;
+	}
+	/// Sets boolean value against an enum member
+	public void set(T val)(bool flag){
+		enum ptrdiff_t index = [EnumMembers!T].indexOf(val);
+		static if (index < 0)
+			static assert(0, val.to!string ~ " is not a member of enum " ~ T.stringof);
+		enum size_t acInd = index / 8;
+		enum size_t shift = index - (acInd * 8);
+		_flags[acInd] = (_flags[acInd] & ~(1 << shift)) | (flag << shift);
+	}
+	/// Sets all flags
+	public void set(bool flag){
+		_flags[] = ubyte.max * flag;
+	}
+	/// == operator
+	bool opBinary(string op : "==")(const Flags!T rhs) const{
+		static if (EnumMembers!T.length % 8 == 0)
+			return _flags == rhs._flags;
+		if (_flags[0 .. $ - 1] != rhs._flags[0 .. $ - 1])
+			return false;
+		enum ubyte shift = 8 - (EnumMembers!T.length % 8);
+		return (_flags[$ - 1] << shift) == (rhs._flags[$ - 1] << shift);
+	}
+	/// != operator
+	bool opBinary(string op : "!=")(const Flags!T rhs) const{
+		return !(this == rhs);
+	}
+	/// cast to bool (true if at least 1 flag true)
+	bool opCast(T : bool)() const{
+		foreach (flags; _flags){
+			if (flags)
+				return true;
+		}
+		return false;
+	}
+}
+/// 
+unittest{
+	enum EventType{
+		Update,
+		KeyPress,
+		KeyRelease,
+		MousePress,
+		MouseRelease,
+		MouseHover,
+		Resize,
+		Timer,
+		Init
+	}
+
+	Flags!EventType eventSub;
+	// initially, all should be false
+	foreach (val; EnumMembers!EventType)
+		assert(eventSub.get!val == false);
+	// set even numbered to true, check if it worked
+	foreach (i, val; EnumMembers!EventType){
+		eventSub.set!val(i % 2 == 0);
+		assert (eventSub.get!val == (i % 2 == 0));
+	}
+	// set all to true
+	eventSub.set(true);
+	foreach (val; EnumMembers!EventType)
+		assert(eventSub.get!val == true);
+	// set all to false
+	eventSub.set(false);
+	foreach (val; EnumMembers!EventType)
+		assert(eventSub.get!val == false);
+	
+	// time for comparison operators
+	Flags!EventType eSub;
+	assert(eventSub == eSub);
+	eventSub.set(true);
+	assert(eventSub != eSub);
+	eSub.set(true);
+	assert(eventSub == eSub);
+	eventSub.set(false);
+	assert(eventSub != eSub);
+
+	eSub.set(false);
+	foreach (i, val; EnumMembers!EventType){
+		eventSub.set!val(i % 2 == 0);
+		eSub.set!val(i % 2 == 1);
+	}
+	assert(eventSub != eSub);
+	foreach (i, val; EnumMembers!EventType){
+		eSub.set!val(i % 2 == 0);
+	}
+	assert(eventSub == eSub);
+
+	// bool cast
+	assert(eSub);
+	assert(eventSub);
+	eSub.set(false);
+	assert(!eSub);
+	eSub.set!(EventType.Init)(true);
+	assert(eSub);
 }
 
 /// Use to manage dynamic arrays that frequently change lengths
