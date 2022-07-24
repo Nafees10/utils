@@ -48,6 +48,14 @@ private:
 		enum string _notMemberError = val.to!string ~
 			" is not a member of enum " ~ T.stringof;
 	}
+	/// Returns: [index, shift]. index can be -1 to indicate not existing
+	size_t[2] _getIndexShift(T val) const{
+		immutable ptrdiff_t index = [EnumMembers!T].indexOf(val);
+		if (index < 0)
+			return [-1, -1];
+		immutable size_t acInd = index / 8;
+		return [acInd, index - (acInd * 8)];
+	}
 
 	/// private constructor
 	this(ubyte[(EnumMembers!T.length + 7) / 8] flags){
@@ -78,11 +86,29 @@ public:
 		static assert(_index!val >= 0, _notMemberError!val);
 		return (_flags[_index!val] >> _shift!val) & 1;
 	}
+	/// .  
+	/// will return false in case member not existing
+	bool get(T val) const{
+		size_t[2] indShift = _getIndexShift(val);
+		if (indShift[0] == -1)
+			return false;
+		return (_flags[indShift[0]] >> indShift[1]) & 1;
+	}
 	/// Sets boolean value against an enum member
 	void set(T val)(bool flag = true){
 		static assert(_index!val >= 0, _notMemberError!val);
 		_flags[_index!val] = (_flags[_index!val] & ~(1 << _shift!val)) |
 			(flag << _shift!val);
+	}
+	/// .  
+	/// will do nothing in case member not existing
+	void set(T val, bool flag = true){
+		size_t[2] indShift = _getIndexShift(val);
+		if (indShift[0] == -1)
+			return;
+		_flags[indShift[0]] = cast(ubyte)(
+			(_flags[indShift[0]] & ~(1 << indShift[1])) |
+			(flag << indShift[1]));
 	}
 	/// Sets all flags
 	void set(bool flag = true){
@@ -152,6 +178,7 @@ unittest{
 	// initially, all should be false
 	foreach (val; EnumMembers!EventType){
 		assert(eventSub.get!val == false);
+		assert(eventSub.get(val) == false);
 	}
 	assert(eventSub.count(true) == 0);
 	assert(eventSub.count(false) == eventSub.count);
@@ -161,14 +188,23 @@ unittest{
 		eventSub.set!val(i % 2 == 0);
 		assert (eventSub.get!val == (i % 2 == 0));
 	}
+	eventSub.set(false);
+	foreach (i, val; EnumMembers!EventType){
+		eventSub.set(val, i % 2 == 0);
+		assert (eventSub.get(val) == (i % 2 == 0));
+	}
 	// set all to true
 	eventSub.set(true);
-	foreach (val; EnumMembers!EventType)
+	foreach (val; EnumMembers!EventType){
 		assert(eventSub.get!val == true);
+		assert(eventSub.get(val) == true);
+	}
 	// set all to false
 	eventSub.set(false);
-	foreach (val; EnumMembers!EventType)
+	foreach (val; EnumMembers!EventType){
 		assert(eventSub.get!val == false);
+		assert(eventSub.get(val) == false);
+	}
 	
 	// time for comparison operators
 	Flags!EventType eSub;
