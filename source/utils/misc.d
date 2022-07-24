@@ -405,7 +405,7 @@ unittest{
 /// Returns: true if all elements present in `toMatch` are also present in `elements`
 bool matchElements(T)(T[] toMatch, T[] elements){
 	foreach(currentToMatch; toMatch){
-		if (!elements.hasElement(currentToMatch))
+		if (!elements.canFind(currentToMatch))
 			return false;
 	}
 	return true;
@@ -447,10 +447,10 @@ size_t bracketPos(T, bool forward=true)
 	Stack!T brackets = new Stack!T;
 	size_t i = index;
 	for (immutable size_t lastInd = (forward ? s.length : 0); i != lastInd; (forward ? i ++: i --)){
-		if ((forward ? opening : closing).hasElement(s[i])){
+		if ((forward ? opening : closing).canFind(s[i])){
 			// push it to brackets
 			brackets.push(s[i]);
-		}else if ((forward ? closing : opening).hasElement(s[i])){
+		}else if ((forward ? closing : opening).canFind(s[i])){
 			// make sure the correct bracket was closed
 			if ((forward ? opening : closing).indexOf(s[i]) !=
 				(forward ? closing : opening).indexOf(brackets.pop)){
@@ -544,7 +544,7 @@ bool isNum(string s, bool allowDecimalPoint=true){
 	foreach (c; s){
 		if (c == '.' && !hasDecimalPoint){
 			hasDecimalPoint = true;
-		}else if (!"0123456789".hasElement(c)){
+		}else if (!"0123456789".canFind(c)){
 			return false;
 		}
 	}
