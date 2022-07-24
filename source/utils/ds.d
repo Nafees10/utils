@@ -2,12 +2,13 @@
 	Some data structures
 +/
 module utils.ds;
+import utils.misc;
 
 import std.file;
 import std.stdio;
-import std.conv : to;
-import utils.misc;
 import std.traits;
+import std.algorithm;
+import std.conv : to;
 
 /// Used to read some data type as `ubyte[x]`
 union ByteUnion(T){
@@ -1269,7 +1270,7 @@ public:
 		LinkedItem!(T)* actualLastRead = lastReadPtr;
 		while (ptr){
 			LinkedItem!(T)* next = (*ptr).next;
-			if (toRemove.hasElement((*ptr).data)){
+			if (toRemove.canFind((*ptr).data)){
 				lastReadPtr = ptr;
 				r = this.removeLastRead();
 				if (!r){
@@ -1507,7 +1508,6 @@ public:
 }
 ///
 unittest{
-	import std.conv : to;
 	LinkedList!ubyte list = new LinkedList!ubyte;
 	//`LinkedList.append` and `LinkedList.read` and `LinkedList.readFirst` and `LinkedList.readLast` and `LinkedList.resetRead`
 	list.append(0);
@@ -1925,7 +1925,6 @@ public:
 ///
 unittest{
 	import std.path : dirSeparator;
-	import std.conv : to;
 	// delete the file if it already exists, so it wont mess up the tests
 	string fname = tempDir ~ dirSeparator ~ "utilsfilereader";
 	if (fname.exists){
