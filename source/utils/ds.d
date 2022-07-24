@@ -43,6 +43,11 @@ private:
 	template _shift(T val){
 		enum ubyte _shift = [EnumMembers!T].indexOf(val) - (_index!val * 8);
 	}
+	/// Error message for when a value is not enum member
+	template _notMemberError(T val){
+		enum string _notMemberError = val.to!string ~
+			" is not a member of enum " ~ T.stringof;
+	}
 
 	/// private constructor
 	this(ubyte[(EnumMembers!T.length + 7) / 8] flags){
@@ -70,15 +75,14 @@ public:
 	}
 	/// Returns: boolean value against an enum member
 	bool get(T val)() const{
-		static if (_index!val < 0)
-			static assert(0, val.to!string ~ " is not a member of enum " ~ T.stringof);
+		static assert(_index!val >= 0, _notMemberError!val);
 		return (_flags[_index!val] >> _shift!val) & 1;
 	}
 	/// Sets boolean value against an enum member
 	void set(T val)(bool flag = true){
-		static if (_index!val < 0)
-			static assert(0, val.to!string ~ " is not a member of enum " ~ T.stringof);
-		_flags[_index!val] = (_flags[_index!val] & ~(1 << _shift!val)) | (flag << _shift!val);
+		static assert(_index!val >= 0, _notMemberError!val);
+		_flags[_index!val] = (_flags[_index!val] & ~(1 << _shift!val)) |
+			(flag << _shift!val);
 	}
 	/// Sets all flags
 	void set(bool flag = true){
@@ -106,10 +110,6 @@ public:
 		static foreach(i; 0 .. _flags.length)
 			retFlags[i] = _flags[i] & rhs._flags[i];
 		return Flags!T(retFlags);
-	}
-	/// ditto
-	bool opBinary(string op : "&")(const T rhs) const{
-
 	}
 	/// `|` operator
 	Flags!T opBinary(string op : "|")(const Flags!T rhs) const{
@@ -150,8 +150,9 @@ unittest{
 
 	Flags!EventType eventSub;
 	// initially, all should be false
-	foreach (val; EnumMembers!EventType)
+	foreach (val; EnumMembers!EventType){
 		assert(eventSub.get!val == false);
+	}
 	assert(eventSub.count(true) == 0);
 	assert(eventSub.count(false) == eventSub.count);
 	assert(eventSub.count == 9);
