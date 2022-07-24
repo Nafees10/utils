@@ -28,12 +28,32 @@ union ByteUnion(T){
 /// Use methods:
 /// * `get!(Enum.Member)`
 /// * `set!(Enum.Member)(true or false)`
+/// * and bitwise operators (`&`, `|`, `^`)
 struct Flags(T) if (is(T == enum)){
 	/// flags byte array
 	private ubyte[(EnumMembers!T.length  + 7) / 8] _flags;
+	/// private constructor
+	private this(ubyte[(EnumMembers!T.length + 7) / 8] flags){
+		_flags[] = flags;
+		// fix last byte, set unused to 0
+		static if (EnumMembers!T.length % 8)
+			_flags[$ - 1] &= (1 << (EnumMembers!T.length % 8)) - 1;
+	}
 	/// Returns: number of flags stored
 	size_t count(){
 		return (EnumMembers!T).length;
+	}
+	/// Returns: number of flags that match a value
+	size_t count(bool value){
+		// count 1s
+		size_t ones;
+		foreach(flags; _flags){
+			static foreach(shift; 0 .. 8)
+				ones += (flags >> shift) & 1;
+		}
+		if (value)
+			return ones;
+		return EnumMembers!T.length - ones;
 	}
 	/// Returns: boolean value against an enum member
 	public bool get(T val)() const{
@@ -45,7 +65,7 @@ struct Flags(T) if (is(T == enum)){
 		return (_flags[acInd] >> shift) & 1;
 	}
 	/// Sets boolean value against an enum member
-	public void set(T val)(bool flag){
+	public void set(T val)(bool flag = true){
 		enum ptrdiff_t index = [EnumMembers!T].indexOf(val);
 		static if (index < 0)
 			static assert(0, val.to!string ~ " is not a member of enum " ~ T.stringof);
@@ -54,10 +74,13 @@ struct Flags(T) if (is(T == enum)){
 		_flags[acInd] = (_flags[acInd] & ~(1 << shift)) | (flag << shift);
 	}
 	/// Sets all flags
-	public void set(bool flag){
+	public void set(bool flag = true){
 		_flags[] = ubyte.max * flag;
+		// fix the last byte. unused bits should be all 0
+		static if (EnumMembers!T.length % 8)
+			_flags[$ - 1] &= (1 << (EnumMembers!T.length % 8)) - 1;
 	}
-	/// == operator
+	/// `==` operator
 	bool opBinary(string op : "==")(const Flags!T rhs) const{
 		static if (EnumMembers!T.length % 8 == 0)
 			return _flags == rhs._flags;
@@ -66,12 +89,33 @@ struct Flags(T) if (is(T == enum)){
 		enum ubyte shift = 8 - (EnumMembers!T.length % 8);
 		return (_flags[$ - 1] << shift) == (rhs._flags[$ - 1] << shift);
 	}
-	/// != operator
+	/// `!=` operator
 	bool opBinary(string op : "!=")(const Flags!T rhs) const{
 		return !(this == rhs);
 	}
+	/// `&` operator
+	Flags!T opBinary(string op : "&")(const Flags!T rhs) const{
+		ubyte[_flags.length] retFlags;
+		static foreach(i; 0 .. _flags.length)
+			retFlags[i] = _flags[i] & rhs._flags[i];
+		return Flags!T(retFlags);
+	}
+	/// `|` operator
+	Flags!T opBinary(string op : "|")(const Flags!T rhs) const{
+		ubyte[_flags.length] retFlags;
+		static foreach(i; 0 .. _flags.length)
+			retFlags[i] = _flags[i] | rhs._flags[i];
+		return Flags!T(retFlags);
+	}
+	/// `^` operator
+	Flags!T opBinary(string op : "^")(const Flags!T rhs) const{
+		ubyte[_flags.length] retFlags;
+		static foreach(i; 0 .. _flags.length)
+			retFlags[i] = _flags[i] ^ rhs._flags[i];
+		return Flags!T(retFlags);
+	}
 	/// cast to bool (true if at least 1 flag true)
-	bool opCast(T : bool)() const{
+	bool opCast(TT : bool)() const{
 		foreach (flags; _flags){
 			if (flags)
 				return true;
@@ -97,6 +141,9 @@ unittest{
 	// initially, all should be false
 	foreach (val; EnumMembers!EventType)
 		assert(eventSub.get!val == false);
+	assert(eventSub.count(true) == 0);
+	assert(eventSub.count(false) == eventSub.count);
+	assert(eventSub.count == 9);
 	// set even numbered to true, check if it worked
 	foreach (i, val; EnumMembers!EventType){
 		eventSub.set!val(i % 2 == 0);
@@ -139,6 +186,35 @@ unittest{
 	assert(!eSub);
 	eSub.set!(EventType.Init)(true);
 	assert(eSub);
+	eventSub.set(true);
+	foreach (val; EnumMembers!EventType)
+		eventSub.set!val(false);
+	assert(!eventSub);
+
+	// testing bitwise operators
+	// bitwise and:
+	eSub.set(false);
+	eventSub.set(false);
+	eSub.set!(EventType.KeyPress)(true);
+	eSub.set!(EventType.KeyRelease)(true);
+	eventSub.set(true);
+	// anding both should give key press and release
+	assert((eSub & eventSub) == eSub);
+	eventSub.set!(EventType.KeyPress)(false);
+	// now resulting Flags should only have key release
+	assert((eSub & eventSub).get!(EventType.KeyRelease) == true);
+	assert((eSub & eventSub).count(true) == 1);
+	// bitwise or
+	eSub.set(true);
+	eSub.set!(EventType.Init)(false);
+	eventSub.set(false);
+	eventSub.set!(EventType.Init)(true);
+	assert ((eventSub | eSub).count(true) == 9);
+	// bitwise xor
+	assert((eventSub ^ eSub).count(true) == 9);
+	eventSub.set(true);
+	eSub.set(true);
+	assert((eventSub ^ eSub).count(true) == 0);
 }
 
 /// Use to manage dynamic arrays that frequently change lengths
