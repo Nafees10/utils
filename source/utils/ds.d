@@ -137,6 +137,15 @@ public:
 			retFlags[i] = _flags[i] & rhs._flags[i];
 		return Flags!T(retFlags);
 	}
+	/// ditto
+	Flags!T opBinary(string op : "&")(const T rhs) const{
+		Flags!T ret;
+		size_t[2] indShift = _getIndexShift(rhs);
+		if (indShift[0] == -1)
+			return ret;
+		ret._flags[indShift[0]] |= _flags[indShift[0]] & (1 << indShift[1]);
+		return ret;
+	}
 	/// `|` operator
 	Flags!T opBinary(string op : "|")(const Flags!T rhs) const{
 		ubyte[_flags.length] retFlags;
@@ -144,12 +153,32 @@ public:
 			retFlags[i] = _flags[i] | rhs._flags[i];
 		return Flags!T(retFlags);
 	}
+	/// ditto
+	Flags!T opBinary(string op : "|")(const T rhs) const{
+		Flags!T ret = Flags!T(_flags);
+		size_t[2] indShift = _getIndexShift(rhs);
+		if (indShift[0] == -1)
+			return ret;
+		ret._flags[indShift[0]] |= 1 << indShift[1];
+		return ret;
+	}
 	/// `^` operator
 	Flags!T opBinary(string op : "^")(const Flags!T rhs) const{
 		ubyte[_flags.length] retFlags;
 		static foreach(i; 0 .. _flags.length)
 			retFlags[i] = _flags[i] ^ rhs._flags[i];
 		return Flags!T(retFlags);
+	}
+	/// ditto
+	Flags!T opBinary(string op : "^")(const T rhs) const{
+		Flags!T ret = Flags!T(_flags);
+		size_t[2] indShift = _getIndexShift(rhs);
+		if (indShift[0] == -1)
+			return ret;
+		ret._flags[indShift[0]] = cast(ubyte)(
+			(_flags[indShift[0]] & ~(1 << indShift[1])) |
+			(_flags[indShift[0]] ^ (1 << indShift[1]) & (1 << indShift[1])));
+		return ret;
 	}
 	/// cast to bool (true if at least 1 flag true)
 	bool opCast(TT : bool)() const{
@@ -248,21 +277,32 @@ unittest{
 	eventSub.set(true);
 	// anding both should give key press and release
 	assert((eSub & eventSub) == eSub);
+	assert ((eSub | EventType.KeyPress | EventType.KeyRelease) == eSub);
 	eventSub.set!(EventType.KeyPress)(false);
 	// now resulting Flags should only have key release
 	assert((eSub & eventSub).get!(EventType.KeyRelease) == true);
 	assert((eSub & eventSub).count(true) == 1);
+	assert((eSub & EventType.KeyRelease).get!(EventType.KeyRelease) == true);
+	assert((eSub & EventType.KeyRelease).count(true) == 1);
 	// bitwise or
 	eSub.set(true);
 	eSub.set!(EventType.Init)(false);
 	eventSub.set(false);
 	eventSub.set!(EventType.Init)(true);
 	assert ((eventSub | eSub).count(true) == 9);
+	assert ((eventSub | EventType.MouseHover).get!(EventType.MouseHover));
+	assert ((eventSub | EventType.MouseHover).count(true) == 2);
+	assert ((eventSub | EventType.MouseHover | EventType.MouseRelease).
+		count(true) == 3);
+	assert ((eventSub | EventType.MouseHover | EventType.MouseRelease).
+		get!(EventType.MouseRelease) == true);
 	// bitwise xor
 	assert((eventSub ^ eSub).count(true) == 9);
 	eventSub.set(true);
 	eSub.set(true);
 	assert((eventSub ^ eSub).count(true) == 0);
+	assert ((eventSub ^ EventType.Init).get!(EventType.Init) == false);
+	assert ((eventSub ^ EventType.Init).count(true) == 8);
 }
 
 /// Use to manage dynamic arrays that frequently change lengths
