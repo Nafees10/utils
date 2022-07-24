@@ -30,15 +30,28 @@ union ByteUnion(T){
 /// * `set!(Enum.Member)(true or false)`
 /// * and bitwise operators (`&`, `|`, `^`)
 struct Flags(T) if (is(T == enum)){
+private:
 	/// flags byte array
-	private ubyte[(EnumMembers!T.length  + 7) / 8] _flags;
+	ubyte[(EnumMembers!T.length  + 7) / 8] _flags;
+
+	/// index in _flags for a enum member
+	template _index(T val){
+		enum ptrdiff_t _index = [EnumMembers!T].indexOf(val) >= 0 ?
+			[EnumMembers!T].indexOf(val) / 8 : -1;
+	}
+	/// shift value for enum member
+	template _shift(T val){
+		enum ubyte _shift = [EnumMembers!T].indexOf(val) - (_index!val * 8);
+	}
+
 	/// private constructor
-	private this(ubyte[(EnumMembers!T.length + 7) / 8] flags){
+	this(ubyte[(EnumMembers!T.length + 7) / 8] flags){
 		_flags[] = flags;
 		// fix last byte, set unused to 0
 		static if (EnumMembers!T.length % 8)
 			_flags[$ - 1] &= (1 << (EnumMembers!T.length % 8)) - 1;
 	}
+public:
 	/// Returns: number of flags stored
 	size_t count(){
 		return (EnumMembers!T).length;
@@ -56,25 +69,19 @@ struct Flags(T) if (is(T == enum)){
 		return EnumMembers!T.length - ones;
 	}
 	/// Returns: boolean value against an enum member
-	public bool get(T val)() const{
-		enum ptrdiff_t index = [EnumMembers!T].indexOf(val);
-		static if (index < 0)
+	bool get(T val)() const{
+		static if (_index!val < 0)
 			static assert(0, val.to!string ~ " is not a member of enum " ~ T.stringof);
-		enum size_t acInd = index / 8;
-		enum size_t shift = index - (acInd * 8);
-		return (_flags[acInd] >> shift) & 1;
+		return (_flags[_index!val] >> _shift!val) & 1;
 	}
 	/// Sets boolean value against an enum member
-	public void set(T val)(bool flag = true){
-		enum ptrdiff_t index = [EnumMembers!T].indexOf(val);
-		static if (index < 0)
+	void set(T val)(bool flag = true){
+		static if (_index!val < 0)
 			static assert(0, val.to!string ~ " is not a member of enum " ~ T.stringof);
-		enum size_t acInd = index / 8;
-		enum size_t shift = index - (acInd * 8);
-		_flags[acInd] = (_flags[acInd] & ~(1 << shift)) | (flag << shift);
+		_flags[_index!val] = (_flags[_index!val] & ~(1 << _shift!val)) | (flag << _shift!val);
 	}
 	/// Sets all flags
-	public void set(bool flag = true){
+	void set(bool flag = true){
 		_flags[] = ubyte.max * flag;
 		// fix the last byte. unused bits should be all 0
 		static if (EnumMembers!T.length % 8)
@@ -99,6 +106,10 @@ struct Flags(T) if (is(T == enum)){
 		static foreach(i; 0 .. _flags.length)
 			retFlags[i] = _flags[i] & rhs._flags[i];
 		return Flags!T(retFlags);
+	}
+	/// ditto
+	bool opBinary(string op : "&")(const T rhs) const{
+
 	}
 	/// `|` operator
 	Flags!T opBinary(string op : "|")(const Flags!T rhs) const{
