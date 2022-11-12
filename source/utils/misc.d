@@ -59,7 +59,7 @@ Times bench(void delegate() func, ulong runs = 100_000){
 
 /// mangles an unsigned integer, using a key.
 /// is reversible. calling this on a mangled integer will un-mangle it
-size_t mangle(size_t val, size_t key){
+size_t mangle(size_t val, size_t key) pure {
 	static const bits = size_t.sizeof * 8;
 	size_t ret = ~key & val;
 	for (ubyte i = 0; i < bits; i ++){
@@ -92,7 +92,7 @@ unittest{
 
 /// mangles using a key available at compile time.
 /// is reversible, calling mangled integer with same key will return un-mangled integer
-size_t mangle(size_t key)(size_t val) pure{
+size_t mangle(size_t key)(size_t val) pure {
 	static size_t rmOdd(size_t key) pure{
 		size_t ret;
 		for (ubyte i = 0; i < size_t.sizeof * 8; i ++){
@@ -147,7 +147,7 @@ unittest{
 /// Generates combinations for enum with bitflag members
 /// T, the enum, must have base type as ulong
 ulong[] combinations(T)(ulong alwaysIncluded = 0, ulong alwaysExcluded = 0)
-		if (is(T == enum) && is(OriginalType!(Unqual!T) == ulong)){
+		pure if (is(T == enum) && is(OriginalType!(Unqual!T) == ulong)){
 	ulong[] ret;
 	immutable ulong ignore = alwaysIncluded & ~alwaysExcluded;
 	ulong val = ignore;
@@ -182,7 +182,7 @@ unittest{
 
 /// Converts bitflags to comma separated readable string for enums
 /// T is an enum, with ulong base type
-string bitmaskToString(T, char ENCLOSE=0)(ulong flags)
+string bitmaskToString(T, char ENCLOSE=0)(ulong flags) pure
 		if (is(T == enum) && is(OriginalType!(Unqual!T) == ulong)){
 	string str;
 	foreach (i; EnumMembers!T){
@@ -312,7 +312,7 @@ deprecated string[] listDir(string pathname){
 /// Returns: the number in a size_t
 /// 
 /// Throws: Exception in case string is not a hexadecimal number, or too big to store in size_t, or empty string
-size_t readHexadecimal(string str){
+size_t readHexadecimal(string str) pure {
 	import std.range : iota, array;
 	if (str.length == 0)
 		throw new Exception("cannot read hexadecimal number from empty string");
@@ -341,7 +341,7 @@ unittest{
 /// Returns: the number in a size_t
 /// 
 /// Throws: Exception in case string is not a binary number, or too big to store in size_t, or empty string
-size_t readBinary(string str){
+size_t readBinary(string str) pure {
 	if (str.length == 0)
 		throw new Exception("cannot read binary number from empty string");
 	if (str.length > size_t.sizeof * 8)
@@ -362,7 +362,7 @@ unittest{
 /// Returns: true if an aray has an element, false if no
 ///
 /// Deprecated: use std.algorithm.canFind
-deprecated bool hasElement(T)(T[] array, T element){
+deprecated bool hasElement(T)(T[] array, T element) pure {
 	foreach(cur; array){
 		if (cur == element){
 			return true;
@@ -377,7 +377,7 @@ unittest{
 }
 
 /// Returns: true if array contains all elements provided in an array, else, false
-bool hasElement(T)(T[] array, T[] elements){
+bool hasElement(T)(T[] array, T[] elements) pure {
 	// go through the list and match as many elements as possible
 	foreach (val; elements){
 		if (array.indexOf(val) == -1)
@@ -403,7 +403,7 @@ unittest{
 /// `elements` is the array containing the elements that will be compared against  
 ///
 /// Returns: true if all elements present in `toMatch` are also present in `elements`
-bool matchElements(T)(T[] toMatch, T[] elements){
+bool matchElements(T)(T[] toMatch, T[] elements) pure {
 	foreach(currentToMatch; toMatch){
 		if (!elements.canFind(currentToMatch))
 			return false;
@@ -417,7 +417,7 @@ unittest{
 }
 
 /// Returns: the index of an element in an array, negative one if not found
-ptrdiff_t indexOf(T)(T[] array, T element){
+ptrdiff_t indexOf(T)(T[] array, T element) pure {
 	foreach (i, val; array){
 		if (val == element)
 			return i;
@@ -443,7 +443,8 @@ unittest{
 /// 
 /// Throws: Exception if the bracket is not found
 size_t bracketPos(T, bool forward=true)
-		(T[] s, size_t index, T[] opening=['[','{','('], T[] closing=[']','}',')']){
+		(T[] s, size_t index, T[] opening=['[','{','('], T[] closing=[']','}',')'])
+		pure {
 	Stack!T brackets = new Stack!T;
 	size_t i = index;
 	for (immutable size_t lastInd = (forward ? s.length : 0); i != lastInd; (forward ? i ++: i --)){
@@ -509,7 +510,7 @@ unittest{
 /// Divides an array into smaller arrays, where smaller arrays have a max size
 /// 
 /// Returns: array of the smaller arrays
-T[][] divideArray(T)(T[] array, size_t maxLength){
+T[][] divideArray(T)(T[] array, size_t maxLength) pure {
 	if (maxLength == 0)
 		throw new Exception("maxLength must be greater than 0");
 	T[][] r;
@@ -533,10 +534,10 @@ unittest{
 }
 
 /// Returns: true if a string is a number
-bool isNum(string s, bool allowDecimalPoint=true){
+bool isNum(string s, bool allowDecimalPoint=true) pure {
 	bool hasDecimalPoint = false;
 	if (!allowDecimalPoint)
-		hasDecimalPoint = true; // just a hack that makes it return false on "seeing" decimal point
+		hasDecimalPoint = true; // hack
 	if (s.length > 0 && s[0] == '-')
 		s = s[1 .. $];
 	if (s.length == 0)
@@ -568,7 +569,7 @@ unittest{
 }
 
 /// Returns: a string with all uppercase alphabets converted into lowercase
-string lowercase(string s){
+string lowercase(string s) pure {
 	static immutable ubyte diff = 'a' - 'A';
 	char[] r = (cast(char[])s).dup;
 	foreach (ref c; r){
@@ -584,7 +585,7 @@ unittest{
 }
 
 /// Returns: true if all characters in a string are alphabets, uppercase, lowercase, or both
-bool isAlphabet(string s){
+bool isAlphabet(string s) pure {
 	foreach (c; s){
 		if ((c < 'a' || c > 'z') && (c < 'A' || c > 'Z')){
 			return false;
