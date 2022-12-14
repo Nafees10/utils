@@ -40,17 +40,20 @@ private:
 		enum ptrdiff_t _index = [EnumMembers!T].indexOf(val) >= 0 ?
 			[EnumMembers!T].indexOf(val) / 8 : -1;
 	}
+
 	/// shift value for enum member
 	template _shift(T val){
 		enum ubyte _shift = [EnumMembers!T].indexOf(val) - (_index!val * 8);
 	}
+
 	/// Error message for when a value is not enum member
 	template _notMemberError(T val){
 		enum string _notMemberError = val.to!string ~
 			" is not a member of enum " ~ T.stringof;
 	}
+
 	/// Returns: [index, shift]. index can be -1 to indicate not existing
-	size_t[2] _getIndexShift(T val) const{
+	size_t[2] _getIndexShift(T val) const {
 		immutable ptrdiff_t index = [EnumMembers!T].indexOf(val);
 		if (index < 0)
 			return [-1, -1];
@@ -70,38 +73,41 @@ public:
 	size_t count(){
 		return (EnumMembers!T).length;
 	}
+
 	/// Returns: number of flags that match a value
 	size_t count(bool value){
 		// count 1s
 		size_t ones;
-		foreach(flags; _flags){
+		static foreach(i; 0 .. _flags.length){
 			static foreach(shift; 0 .. 8)
-				ones += (flags >> shift) & 1;
+				ones += (_flags[i] >> shift) & 1;
 		}
 		if (value)
 			return ones;
 		return EnumMembers!T.length - ones;
 	}
+
 	/// Returns: boolean value against an enum member
-	bool get(T val)() const{
+	bool get(T val)() const {
 		static assert(_index!val >= 0, _notMemberError!val);
 		return (_flags[_index!val] >> _shift!val) & 1;
 	}
-	/// .  
+
 	/// will return false in case member not existing
-	bool get(T val) const{
+	bool get(T val) const {
 		size_t[2] indShift = _getIndexShift(val);
 		if (indShift[0] == -1)
 			return false;
 		return (_flags[indShift[0]] >> indShift[1]) & 1;
 	}
+
 	/// Sets boolean value against an enum member
 	void set(T val)(bool flag = true){
 		static assert(_index!val >= 0, _notMemberError!val);
 		_flags[_index!val] = (_flags[_index!val] & ~(1 << _shift!val)) |
 			(flag << _shift!val);
 	}
-	/// .  
+
 	/// will do nothing in case member not existing
 	void set(T val, bool flag = true){
 		size_t[2] indShift = _getIndexShift(val);
@@ -111,15 +117,73 @@ public:
 			(_flags[indShift[0]] & ~(1 << indShift[1])) |
 			(flag << indShift[1]));
 	}
+
 	/// Sets all flags
 	void set(bool flag = true){
-		_flags[] = ubyte.max * flag;
+		this = flag;
+	}
+
+	/// index assign operator
+	ref Flags!T opIndexAssign(bool val, T index){
+		set(index, val);
+		return this;
+	}
+
+	/// index operator
+	bool opIndex(T index) const {
+		return get(index);
+	}
+
+	/// index `&=` operator
+	bool opIndexOpAssign(string op : "&")(bool val, T index){
+		size_t[2] indShift = _getIndexShift(index);
+		if (indShift[0] == -1)
+			return false;
+		set(index, get(index) && val);
+		return get(index);
+	}
+
+	/// index `|=` operator
+	bool opIndexOpAssign(string op : "|")(bool val, T index){
+		size_t[2] indShift = _getIndexShift(index);
+		if (indShift[0] == -1)
+			return false;
+		set(index, get(index) || val);
+		return get(index);
+	}
+
+	/// index `^=` operator
+	bool opIndexOpAssign(string op : "^")(bool val, T index){
+		size_t[2] indShift = _getIndexShift(index);
+		if (indShift[0] == -1)
+			return false;
+		set(index, get(index) ^ val);
+		return get(index);
+	}
+
+	/// assign operator for bool, sets all flags
+	ref Flags!T opAssign(bool rhs){
+		_flags[] = ubyte.max * rhs;
 		// fix the last byte. unused bits should be all 0
 		static if (EnumMembers!T.length % 8)
 			_flags[$ - 1] &= (1 << (EnumMembers!T.length % 8)) - 1;
+		return this;
 	}
+
+	/// `+=` operator, sets a flag to true
+	ref Flags!T opOpAssign(string op : "+")(T rhs){
+		set(rhs, true);
+		return this;
+	}
+
+	/// `-=` operator, sets a flag to false
+	ref Flags!T opOpAssign(string op : "-")(T rhs){
+		set(rhs, false);
+		return this;
+	}
+
 	/// `==` operator
-	bool opBinary(string op : "==")(const Flags!T rhs) const{
+	bool opBinary(string op : "==")(const ref Flags!T rhs) const {
 		static if (EnumMembers!T.length % 8 == 0)
 			return _flags == rhs._flags;
 		if (_flags[0 .. $ - 1] != rhs._flags[0 .. $ - 1])
@@ -127,62 +191,119 @@ public:
 		enum ubyte shift = 8 - (EnumMembers!T.length % 8);
 		return (_flags[$ - 1] << shift) == (rhs._flags[$ - 1] << shift);
 	}
+
+	/// ditto
+	bool opBinary(string op : "==")(T rhs) const {
+		return get(rhs);
+	}
+
 	/// `!=` operator
-	bool opBinary(string op : "!=")(const Flags!T rhs) const{
+	bool opBinary(string op : "!=")(const ref Flags!T rhs) const {
 		return !(this == rhs);
 	}
+
+	/// ditto
+	bool opBinary(string op : "!=")(T rhs) const {
+		return !(this == rhs);
+	}
+
+	/// `&=` operator
+	ref Flags!T opOpAssign(string op : "&")(const ref Flags!T rhs){
+		static foreach (i; 0 .. _flags.length)
+			_flags[i] &= rhs._flags[i];
+		return this;
+	}
+
+	/// ditto
+	ref Flags!T opOpAssign(string op : "&")(T rhs){
+		size_t[2] indShift = _getIndexShift(rhs);
+		if (indShift[0] == -1)
+			return this;
+		ubyte slice = _flags[indShift[0]];
+		_flags[] = 0;
+		_flags[indShift[0]] = slice & (1 << indShift[1]);
+		return this;
+	}
+
 	/// `&` operator
-	Flags!T opBinary(string op : "&")(const Flags!T rhs) const{
-		ubyte[_flags.length] retFlags;
-		static foreach(i; 0 .. _flags.length)
-			retFlags[i] = _flags[i] & rhs._flags[i];
-		return Flags!T(retFlags);
-	}
-	/// ditto
-	Flags!T opBinary(string op : "&")(const T rhs) const{
-		Flags!T ret;
-		size_t[2] indShift = _getIndexShift(rhs);
-		if (indShift[0] == -1)
-			return ret;
-		ret._flags[indShift[0]] |= _flags[indShift[0]] & (1 << indShift[1]);
+	Flags!T opBinary(string op : "&")(const ref Flags!T rhs) const {
+		Flags!T ret = Flags!T(_flags);
+		ret &= rhs;
 		return ret;
 	}
+
+	/// ditto
+	Flags!T opBinary(string op : "&")(T rhs) const {
+		Flags!T ret = Flags!T(_flags);
+		ret &= rhs;
+		return ret;
+	}
+
+	/// `|=` operator
+	ref Flags!T opOpAssign(string op : "|")(const ref Flags!T rhs){
+		static foreach (i; 0 .. _flags.length)
+			_flags[i] |= rhs._flags[i];
+		return this;
+	}
+
+	/// ditto
+	ref Flags!T opOpAssign(string op : "|")(T rhs){
+		size_t[2] indShift = _getIndexShift(rhs);
+		if (indShift[0] == -1)
+			return this;
+		_flags[indShift[0]] |= 1 << indShift[1];
+		return this;
+	}
+
 	/// `|` operator
-	Flags!T opBinary(string op : "|")(const Flags!T rhs) const{
-		ubyte[_flags.length] retFlags;
-		static foreach(i; 0 .. _flags.length)
-			retFlags[i] = _flags[i] | rhs._flags[i];
-		return Flags!T(retFlags);
-	}
-	/// ditto
-	Flags!T opBinary(string op : "|")(const T rhs) const{
+	Flags!T opBinary(string op : "|")(const ref Flags!T rhs) const {
 		Flags!T ret = Flags!T(_flags);
-		size_t[2] indShift = _getIndexShift(rhs);
-		if (indShift[0] == -1)
-			return ret;
-		ret._flags[indShift[0]] |= 1 << indShift[1];
+		ret |= rhs;
 		return ret;
 	}
+
+	/// ditto
+	Flags!T opBinary(string op : "|")(T rhs) const {
+		Flags!T ret = Flags!T(_flags);
+		ret |= rhs;
+		return ret;
+	}
+
+	/// `^=` operator
+	ref Flags!T opOpAssign(string op : "^")(const ref Flags!T rhs){
+		static foreach(i; 0 .. _flags.length)
+			_flags[i] ^= rhs._flags[i];
+		return this;
+	}
+
+	/// ditto
+	ref Flags!T opOpAssign(string op : "^")(T rhs){
+		size_t[2] indShift = _getIndexShift(rhs);
+		if (indShift[0] == -1)
+			return this;
+		_flags[indShift[0]] = cast(ubyte)(
+				(_flags[indShift[0]] & ~(1 << indShift[1])) | // 0 that bit
+				(_flags[indShift[0]] ^ (1 << indShift[1]) & (1 << indShift[1]))
+				);
+		return this;
+	}
+
 	/// `^` operator
-	Flags!T opBinary(string op : "^")(const Flags!T rhs) const{
-		ubyte[_flags.length] retFlags;
-		static foreach(i; 0 .. _flags.length)
-			retFlags[i] = _flags[i] ^ rhs._flags[i];
-		return Flags!T(retFlags);
-	}
-	/// ditto
-	Flags!T opBinary(string op : "^")(const T rhs) const{
+	Flags!T opBinary(string op : "^")(const ref Flags!T rhs) const {
 		Flags!T ret = Flags!T(_flags);
-		size_t[2] indShift = _getIndexShift(rhs);
-		if (indShift[0] == -1)
-			return ret;
-		ret._flags[indShift[0]] = cast(ubyte)(
-			(_flags[indShift[0]] & ~(1 << indShift[1])) |
-			(_flags[indShift[0]] ^ (1 << indShift[1]) & (1 << indShift[1])));
+		ret ^= rhs;
 		return ret;
 	}
+
+	/// ditto
+	Flags!T opBinary(string op : "^")(T rhs) const {
+		Flags!T ret = Flags!T(_flags);
+		ret ^= rhs;
+		return ret;
+	}
+
 	/// cast to bool (true if at least 1 flag true)
-	bool opCast(TT : bool)() const{
+	bool opCast(TT : bool)() const {
 		foreach (flags; _flags){
 			if (flags)
 				return true;
@@ -304,12 +425,40 @@ unittest{
 	assert((eventSub ^ eSub).count(true) == 0);
 	assert ((eventSub ^ EventType.Init).get!(EventType.Init) == false);
 	assert ((eventSub ^ EventType.Init).count(true) == 8);
+
+	/// testing overloaded operators
+	eventSub = false;
+	assert(eventSub.count(true) == 0);
+	eSub = true;
+	assert(eSub.count(true) == EnumMembers!EventType.length);
+	assert(eventSub[EventType.Resize] == false);
+	eventSub[EventType.Resize] = true;
+	assert(eventSub[EventType.Resize] == true);
+	assert(eventSub[EventType.Init] == false);
+	eventSub += EventType.Init;
+	assert(eventSub[EventType.Init] == true);
+	eventSub -= EventType.Init;
+	assert(eventSub[EventType.Init] == false);
+	eventSub[EventType.Timer] |= false;
+	assert(eventSub[EventType.Timer] == false);
+	eventSub[EventType.Timer] |= true;
+	assert(eventSub[EventType.Timer] == true);
+	eventSub[EventType.Timer] |= false;
+	assert(eventSub[EventType.Timer] == true);
+	eventSub[EventType.Update] ^= false;
+	assert(eventSub[EventType.Update] == false);
+	eventSub[EventType.Update] ^= true;
+	assert(eventSub[EventType.Update] == true);
+	eventSub[EventType.Update] &= true;
+	assert(eventSub[EventType.Update] == true);
+	eventSub[EventType.Update] &= false;
+	assert(eventSub[EventType.Update] == false);
 }
 
 /// Use to manage dynamic arrays that frequently change lengths
 /// 
 /// Provides more functionality for arrays, like searching in arrays, removing elements...
-class List(T){
+deprecated class List(T){
 private:
 	T[] list; /// the actual list
 	size_t taken=0; /// how many elements are actually stored in the list
@@ -585,7 +734,6 @@ public:
 	}
 	/// Loads list from an array
 	void loadArray(T[] newList){
-		size_t i;
 		list = newList.dup;
 		taken = newList.length;
 		_seek = 0;
@@ -691,7 +839,7 @@ unittest{
 	destroy(list);
 }
 
-/// A basic stack with push, and pop
+/// A linked list based stack with push, and pop
 class Stack(T){
 private:
 	struct StackItem(T){
@@ -1232,7 +1380,6 @@ public:
 		// I'll just use a "hack" and use removeLastRead to remove it
 		LinkedItem!(T)* actualLastRead = lastReadPtr;
 		while (ptr && ( (count > 0 && removedCount < count) || count == 0 )){
-			LinkedItem!(T)* next = (*ptr).next;
 			if ((*ptr).data == toRemove){
 				lastReadPtr = ptr;
 				r = this.removeLastRead();
@@ -1265,11 +1412,9 @@ public:
 	bool remove(T[] toRemove){
 		LinkedItem!(T)* ptr = firstItemPtr, prev = null;
 		bool r = false;
-		size_t removedCount = 0;
 		// I'll just use a "hack" and use removeLastRead to remove it
 		LinkedItem!(T)* actualLastRead = lastReadPtr;
 		while (ptr){
-			LinkedItem!(T)* next = (*ptr).next;
 			if (toRemove.canFind((*ptr).data)){
 				lastReadPtr = ptr;
 				r = this.removeLastRead();
@@ -1671,11 +1816,12 @@ public:
 	}
 }
 
-/// TODO: do something about this
+// TODO: do something about this
+/// **NOT IMPLEMENTED YET**
 /// For reading large files which otherwise, would take too much memory
 /// 
-/// Aside from reading, it can also write to files. TODO make it ready
-/*class FileReader{
+/// Aside from reading, it can also write to files.
+deprecated abstract class FileReader{}/*
 private:
 	File file; /// the file currently loaded
 	bool closeOnDestroy; /// stores if the file will be closed when this object is destroyed
@@ -2076,7 +2222,6 @@ public:
 	/// Returns: the data read at position
 	T readAt(T)(size_t at, ref bool incompleteRead){
 		ByteUnion!T r;
-		immutable size_t prevSeek = _seek;
 		at = at > _stream.length ? _stream.length : at;
 		immutable size_t len = at + r.array.length > _stream.length ? _stream.length - at : r.array.length;
 		incompleteRead = len < r.array.length;
