@@ -312,7 +312,7 @@ deprecated string[] listDir(string pathname){
 /// Returns: the number in a size_t
 /// 
 /// Throws: Exception in case string is not a hexadecimal number, or too big to store in size_t, or empty string
-size_t readHexadecimal(string str) pure {
+size_t readHexadecimal(string str){
 	import std.range : iota, array;
 	if (str.length == 0)
 		throw new Exception("cannot read hexadecimal number from empty string");
@@ -444,7 +444,7 @@ unittest{
 /// Throws: Exception if the bracket is not found
 size_t bracketPos(T, bool forward=true)
 		(T[] s, size_t index, T[] opening=['[','{','('], T[] closing=[']','}',')'])
-		pure {
+		{
 	Stack!T brackets = new Stack!T;
 	size_t i = index;
 	for (immutable size_t lastInd = (forward ? s.length : 0); i != lastInd; (forward ? i ++: i --)){
