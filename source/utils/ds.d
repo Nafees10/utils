@@ -24,12 +24,39 @@ union ByteUnion(T){
 	}
 }
 
-/// Stores bit flags against each enum member.
-/// 
-/// Use methods:
-/// * `get!(Enum.Member)`
-/// * `set!(Enum.Member)(true or false)`
-/// * and bitwise operators (`&`, `|`, `^`)
+/++
+Stores bit flags against each enum member, and provides overloaded bitwise
+operators
+
+Usage:
+```
+	flag[Val] = true;
+	flag += Val; // same as above
+	flag -= Val; // store false against Val
+	flag.set!Val(false); // same as above
+	flag.set(Val, false); // same as above
+```
+
+Following operators are overloaded:
+
+* `flags & flags`
+* `flags & Val` - RHS is treated as flags with only Val as true
+* `flags | flags`
+* `flags | Val` - RHS is treated as flags with only Val as true
+* `flags ^ flags`
+* `flags ^ Val` - RHS is treated as flags with only Val as true
+* assignment operator with these (`&= |= ^=`)
+* `flags[Val]` - to read
+* `flags[Val] = bool`
+* `flags[Val] |= bool`
+* `flags[Val] &= bool`
+* `flags[Val] ^= bool`
+* `flags == otherFlags`
+* `flags != otherFlags`
+* `flags == Val` - Check if bit against Val is 1
+* `flags = bool` - Set value of all flags
+* `cast(bool)flags` - true if any one bit is 1
++/
 struct Flags(T) if (is(T == enum)){
 private:
 	/// flags byte array
@@ -69,13 +96,8 @@ private:
 			_flags[$ - 1] &= (1 << (EnumMembers!T.length % 8)) - 1;
 	}
 public:
-	/// Returns: number of flags stored
-	size_t count(){
-		return (EnumMembers!T).length;
-	}
-
 	/// Returns: number of flags that match a value
-	size_t count(bool value){
+	size_t count(bool value = true){
 		// count 1s
 		size_t ones;
 		static foreach(i; 0 .. _flags.length){
@@ -331,9 +353,8 @@ unittest{
 		assert(eventSub.get!val == false);
 		assert(eventSub.get(val) == false);
 	}
-	assert(eventSub.count(true) == 0);
-	assert(eventSub.count(false) == eventSub.count);
-	assert(eventSub.count == 9);
+	assert(eventSub.count == 0);
+	assert(eventSub.count(false) == EnumMembers!EventType.length);
 	// set even numbered to true, check if it worked
 	foreach (i, val; EnumMembers!EventType){
 		eventSub.set!val(i % 2 == 0);
@@ -403,7 +424,7 @@ unittest{
 	eventSub.set!(EventType.KeyPress)(false);
 	// now resulting Flags should only have key release
 	assert((eSub & eventSub).get!(EventType.KeyRelease) == true);
-	assert((eSub & eventSub).count(true) == 1);
+	assert((eSub & eventSub).count == 1);
 	assert((eSub & EventType.KeyRelease).get!(EventType.KeyRelease) == true);
 	assert((eSub & EventType.KeyRelease).count(true) == 1);
 	// bitwise or
@@ -842,45 +863,49 @@ unittest{
 /// A linked list based stack with push, and pop
 class Stack(T){
 private:
-	struct StackItem(T){
+	struct Item(T){
 		T data; /// the data this item holds
-		StackItem* prev; /// pointer to previous StackItem
+		Item* prev; /// pointer to previous Item
+		/// constructor
+		this(T data){
+			this.data = data;
+		}
+		/// ditto
+		this(T data, Item* prev){
+			this.data = data;
+			this.prev = prev;
+		}
 	}
-	StackItem!(T)* lastItemPtr;
-	size_t itemCount;
+	Item!(T)* _top;
+	size_t _count;
 public:
 	this(){
-		lastItemPtr = null;
-		itemCount = 0;
+		_top = null;
+		_count = 0;
 	}
 	~this(){
 		clear;
 	}
 	/// Appends an item to the stack
 	void push(T item){
-		StackItem!(T)* newItem = new StackItem!T;
-		(*newItem).data = item;
-		(*newItem).prev = lastItemPtr;
-		lastItemPtr = newItem;
-		//increase count
-		itemCount ++;
+		Item!(T)* newItem = new Item!T(item, _top);
+		_top = newItem;
+		_count ++;
 	}
 	/// Appends an array of items to the stack
 	void push(T[] items){
-		// put them all in StackItem[]
-		StackItem!(T)*[] newItems;
-		newItems.length = items.length;
-		for (size_t i = 0; i < items.length; i ++){
-			newItems[i] = new StackItem!T;
-			(*newItems[i]).data = items[i];
-		}
-		// make them all point to their previous item, except for the first one, which should point to `lastItemPtr`
-		foreach_reverse (i; 1 .. newItems.length)
-			newItems[i].prev = newItems[i - 1];
-		(*newItems[0]).prev = lastItemPtr;
-		lastItemPtr = newItems[$ - 1];
-		//increase count
-		itemCount += newItems.length;
+		foreach (item; items)
+			push(item);
+	}
+	/// peeks an item on stack
+	/// 
+	/// Returns: item peeked
+	///
+	/// Throws: Exception if stack is empty
+	T peek(){
+		if (_top is null)
+			throw new Exception("Cannot peek from empty stack");
+		return _top.data;
 	}
 	/// pops an item from stack
 	/// 
@@ -888,75 +913,62 @@ public:
 	/// 
 	/// Throws: Exception if stack is empty
 	T pop(){
-		// make sure its not null
-		if (lastItemPtr !is null){
-			T r = (*lastItemPtr).data;
-			// delete it from stack
-			StackItem!(T)* prevItem = (*lastItemPtr).prev;
-			destroy(*lastItemPtr);
-			lastItemPtr = prevItem;
-			//decrease count
-			itemCount --;
-			return r;
-		}else{
+		if (_top is null)
 			throw new Exception("Cannot pop from empty stack");
-		}
+		T ret = _top.data;
+		Item!(T)* prev = _top.prev;
+		.destroy(_top);
+		_top = prev;
+		//decrease count
+		_count --;
+		return ret;
 	}
 	/// Reads and removes an array of items from the stack,
 	/// 
 	/// Throws: Exception if there are not enough items in stack
 	/// 
-	/// Returns: the items read
-	/// 
 	/// Arguments:
-	/// `count` is the number of elements to return  
-	/// `reverse`, if true, elements are read in reverse, last-pushed is last in array  
-	T[] pop(bool reverse=false)(size_t count){
+	/// `arr` is the array to fill. it's length is number of elements to pop
+	/// `reverse`, whether to populate array in reverse (top in stack, at last)
+	void pop(bool reverse=false)(T[] arr){
 		//make sure there are enough items
-		if (itemCount >= count){
-			T[] r;
-			r.length = count;
-			StackItem!(T)* ptr = lastItemPtr;
-			static if (reverse){
-				for (ptrdiff_t i = count-1; i >= 0; i --){
-					r[i] = (*ptr).data;
-					ptr = (*ptr).prev;
-					// delete this item
-					.destroy(*lastItemPtr);
-					lastItemPtr = ptr;
-				}
-			}else{
-				for (size_t i = 0; i < count; i ++){
-					r[i] = (*ptr).data;
-					ptr = (*ptr).prev;
-					//delete it
-					.destroy(*lastItemPtr);
-					lastItemPtr = ptr;
-				}
-			}
-			//decrease count
-			itemCount -= r.length;
-			return r;
-		}else{
+		if (_count < arr.length)
 			throw new Exception("Not enough items in stack");
+		Item!(T)* ptr = _top;
+		static if (reverse){
+			foreach_reverse (ref element; arr){
+				element = ptr.data;
+				ptr = ptr.prev;
+				.destroy(_top);
+				_top = ptr;
+			}
+		}else{
+			foreach (ref element; arr){
+				element = ptr.data;
+				ptr = ptr.prev;
+				.destroy(_top);
+				_top = ptr;
+			}
 		}
+		//decrease count
+		_count -= arr.length;
 	}
 	/// Empties the stack, pops all items
 	void clear(){
 		// go through all items and delete em
-		StackItem!(T)* ptr;
-		ptr = lastItemPtr;
+		Item!(T)* ptr;
+		ptr = _top;
 		while (ptr !is null){
-			StackItem!(T)* prevPtr = (*ptr).prev;
-			destroy(*ptr);
+			Item!(T)* prevPtr = ptr.prev;
+			destroy(ptr);
 			ptr = prevPtr;
 		}
-		lastItemPtr = null;
-		itemCount = 0;
+		_top = null;
+		_count = 0;
 	}
 	/// Number of items in stack
 	@property size_t count(){
-		return itemCount;
+		return _count;
 	}
 }
 ///
@@ -966,9 +978,13 @@ unittest{
 	stack.push(0);
 	stack.push([1, 2]);
 	assert(stack.pop == 2);
-	assert(stack.pop(2) == [1, 0]);
+	ubyte[] arr;
+	arr.length = 2;
+	stack.pop(arr);
+	assert(arr == [1, 0]);
 	stack.push([1, 0]);
-	assert(stack.pop!(true)(2) == [1, 0]);
+	stack.pop!true(arr);
+	assert(arr == [1, 0]);
 	//`Stack.clear` && `Stack.count`
 	stack.push(0);
 	assert(stack.count == 1);
@@ -977,8 +993,8 @@ unittest{
 	stack.destroy;
 }
 
-/// A FIFO (First In is First Out, first element pushed will be removed first) stack
-class FIFOStack(T){
+/// A First-In First-Out stack
+class FIFOStack(T){ // TODO refactor this
 private:
 	/// to store data in a linked manner
 	struct StackElement(T){
