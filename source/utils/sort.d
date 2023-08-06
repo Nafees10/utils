@@ -6,6 +6,7 @@ import std.traits;
 debug import std.conv : to;
 
 /// Sort an input array, where only [0 .. count] elements are required
+/// **THIS WILL MODIFY `input` ARRAY**
 ///
 /// Returns: sorted [0 .. count] elements
 T[] partialSort(alias val = "a", T)(T[] input, ulong count){
@@ -39,8 +40,12 @@ unittest{
 	assert(partialSort(input, 4) == [0, 4, 5, 6]);
 }
 
-/// Radix sort. ascending order
-T[] radixSort(alias val = "a", T)(T[] input){
+/// Radix sort. ascending order.
+/// The input array is sorted after by this, and the ptr can be modified too
+/// the sorted array is returned as well
+///
+/// Returns: sorted array
+T[] radixSort(alias val = "a", T)(ref T[] input){
 	alias valGet = unaryFun!val;
 	enum ubyte end = typeof(valGet(input[0])).sizeof * 8;
 	size_t[256] counts;
