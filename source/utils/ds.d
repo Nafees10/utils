@@ -6,10 +6,11 @@ import utils.misc;
 
 import std.file,
 			 std.meta,
+			 std.conv,
 			 std.stdio,
 			 std.traits,
-			 std.algorithm,
-			 std.conv;
+			 std.bitmanip,
+			 std.algorithm;
 
 /// Used to read some data type as `ubyte[x]`
 union ByteUnion(T){
@@ -1087,6 +1088,7 @@ public:
 	~this(){
 		.destroy(_stream);
 	}
+
 	/// Seek position (i.e: next read/write index)
 	@property size_t seek(){
 		return _seek;
@@ -1095,6 +1097,7 @@ public:
 	@property size_t seek(size_t newVal){
 		return _seek = newVal > _stream.length ? _stream.length : newVal;
 	}
+
 	/// if the stream is allowed to grow in size while writing
 	@property bool grow(){
 		return _grow;
@@ -1103,6 +1106,7 @@ public:
 	@property bool grow(bool newVal){
 		return _grow = newVal;
 	}
+
 	/// maximum size stream is allowed to grow to, 0 for no limit.
 	///
 	/// This is enforced while writing, or changing `ByteStream.size`
@@ -1116,6 +1120,7 @@ public:
 			_seek = _maxSize;
 		return _maxSize;
 	}
+
 	/// The stream
 	@property ubyte[] stream(){
 		return _stream;
@@ -1124,6 +1129,7 @@ public:
 	@property ubyte[] stream(ubyte[] newVal){
 		return _stream = newVal;
 	}
+
 	/// Size, in bytes, of stream
 	@property size_t size(){
 		return _stream.length;
@@ -1135,6 +1141,7 @@ public:
 			_seek = _stream.length;
 		return _stream.length;
 	}
+
 	/// Writes this stream to a file
 	///
 	/// Returns: true if successful, false if not
@@ -1147,6 +1154,7 @@ public:
 		}
 		return true;
 	}
+
 	/// Reads a stream from file.
 	/// if successful, seek and maxSize are set to 0;
 	///
@@ -1162,15 +1170,20 @@ public:
 		_maxSize = 0;
 		return true;
 	}
+
 	/// Reads a slice from the stream into buffer. Will read number of bytes so as to fill `buffer`
 	///
 	/// Returns: number of bytes read
 	size_t readRaw(ubyte[] buffer){
-		immutable size_t len = _seek + buffer.length > _stream.length ? _stream.length - _seek : buffer.length;
+		immutable size_t len =
+			_seek + buffer.length > _stream.length
+			? _stream.length - _seek
+			: buffer.length;
 		buffer[0 .. len] = _stream[_seek .. _seek + len];
 		_seek += len;
 		return len;
 	}
+
 	/// Reads at a seek without changing seek. **Does not work for dynamic arrays**
 	///
 	/// Will still return an invalid value if reading outside stream
@@ -1180,7 +1193,10 @@ public:
 	T readAt(T)(size_t at, ref bool incompleteRead){
 		ByteUnion!T r;
 		at = at > _stream.length ? _stream.length : at;
-		immutable size_t len = at + r.array.length > _stream.length ? _stream.length - at : r.array.length;
+		immutable size_t len =
+			at + r.array.length > _stream.length
+			? _stream.length - at
+			: r.array.length;
 		incompleteRead = len < r.array.length;
 		r.array[0 .. len] = _stream[at .. at + len];
 		return r.data;
