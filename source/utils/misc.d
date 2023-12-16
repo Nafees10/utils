@@ -80,7 +80,7 @@ size_t mangle(size_t val, size_t key) pure {
 	}
 	return ret;
 }
-/// 
+///
 unittest{
 	import std.random : uniform;
 	assert(mangle(0b0010, 0b0011) == 0b0001);
@@ -135,10 +135,10 @@ size_t mangle(size_t key)(size_t val) pure {
 	}
 	return ret;
 }
-/// 
+///
 unittest{
 	import std.random : uniform;
-	
+
 	size_t val = uniform(0, size_t.max);
 	immutable size_t key = 2_294_781_104_715_578_999;
 	assert(mangle!key(mangle!key(val)) == val);
@@ -214,9 +214,9 @@ unittest{
 /// Reads a file into array of string
 ///
 /// each element in the returned array is a separate line, excluding the trailing `\n` character
-/// 
+///
 /// Returns: the lines read from file in array of string
-/// 
+///
 /// Throws: Exception on failure
 string[] fileToArray(string fname){
 	File f = File(fname, "r");
@@ -228,9 +228,9 @@ string[] fileToArray(string fname){
 }
 
 /// Writes an array of string to a file
-/// 
+///
 /// If a file already exists, it will be overwritten, and `\n` is added at end of each string
-/// 
+///
 /// Throws: exception on failure
 void arrayToFile(string[] array, string fname, string toApp = "\n"){
 	File f = File(fname,"w");
@@ -239,84 +239,16 @@ void arrayToFile(string[] array, string fname, string toApp = "\n"){
 	f.close();
 }
 
-/// uses `listdir` to list files/dirs in a dir, and filters the ones that were modified after a given time
-/// 
-/// if the provided dir has subdirs, those are also checked, and so on
-///
-/// Arguments:
-/// `filePath` is the path to the dir/file to check  
-/// `lastTime` is the time to check against  
-/// `exclude` is a list of files/dirs to not to include in the check  
-/// 
-/// Returns: the absolute paths of the files/dirs modified after the time
-deprecated string[] filesModified(string filePath, SysTime lastTime, string[] exclude = []){
-	import std.array;
-	
-	// make sure the filePath is not in exclude
-	if (exclude.indexOf(filePath) >= 0){
-		return [];
-	}
-	if (filePath.isDir){
-		LinkedList!string modifiedList = new LinkedList!string;
-		FIFOStack!string filesToCheck = new FIFOStack!string;
-		filesToCheck.push(listDir(filePath));
-		// go through the stack
-		while (filesToCheck.count > 0){
-			string file = filesToCheck.pop;
-			if (!isAbsolute(file)){
-				file = absolutePath(filePath~'/'~file);
-			}
-			if (exclude.indexOf(file) >= 0){
-				continue;
-			}
-			// check if it's a dir, case yes, push it's files too
-			if (file.isDir){
-				filesToCheck.push(listDir(file));
-			}else if (file.isFile){
-				// is file, check if it was modified
-				if (timeLastModified(file) > lastTime){
-					modifiedList.append(absolutePath(file));
-				}
-			}
-		}
-		string[] r = modifiedList.toArray;
-		.destroy (modifiedList);
-		.destroy (filesToCheck);
-		return r;
-	}else{
-		if (timeLastModified(filePath) > lastTime){
-			return [filePath];
-		}
-	}
-	return [];
-}
-
-/// lists the files and dirs inside a dir
-///
-/// only dirs and files are returned, symlinks are ignored
-/// 
-/// Returns: an array containing absolute paths of files/dirs
-deprecated string[] listDir(string pathname){
-	import std.algorithm;
-	import std.array;
-
-	return std.file.dirEntries(pathname, SpanMode.shallow)
-		.filter!(a => (a.isFile || a.isDir))
-		.map!(a => std.path.absolutePath(a.name))
-		.array;
-}
-
-
 /// Reads a hexadecimal number from string
-/// 
+///
 /// Returns: the number in a size_t
-/// 
+///
 /// Throws: Exception in case string is not a hexadecimal number, or too big to store in size_t, or empty string
 size_t readHexadecimal(string str){
 	import std.range : iota, array;
 	if (str.length == 0)
 		throw new Exception("cannot read hexadecimal number from empty string");
-	if (str.length > size_t.sizeof * 2) // str.length / 2 = numberOfBytes 
+	if (str.length > size_t.sizeof * 2) // str.length / 2 = numberOfBytes
 		throw new Exception("hexadecimal number is too big to store in size_t");
 	static char[16] DIGITS = iota('0', '9'+1).array ~ iota('a', 'f'+1).array;
 	str = str.lowercase;
@@ -328,7 +260,7 @@ size_t readHexadecimal(string str){
 		r |= DIGITS.indexOf(c) << 4 * (lastInd - i);
 	return r;
 }
-/// 
+///
 unittest{
 	assert("FF".readHexadecimal == 0xFF);
 	assert("F0".readHexadecimal == 0xF0);
@@ -337,9 +269,9 @@ unittest{
 }
 
 /// Reads a binary number from string
-/// 
+///
 /// Returns: the number in a size_t
-/// 
+///
 /// Throws: Exception in case string is not a binary number, or too big to store in size_t, or empty string
 size_t readBinary(string str) pure {
 	if (str.length == 0)
@@ -354,29 +286,12 @@ size_t readBinary(string str) pure {
 		r |= (c == '1') << (lastInd - i);
 	return r;
 }
-/// 
+///
 unittest{
 	assert("01010101".readBinary == 0B01010101);
 }
 
-/// Returns: true if an aray has an element, false if no
-///
-/// Deprecated: use std.algorithm.canFind
-deprecated bool hasElement(T)(T[] array, T element) pure {
-	foreach(cur; array){
-		if (cur == element){
-			return true;
-		}
-	}
-	return false;
-}
-///
-unittest{
-	assert([0, 1, 2].hasElement(2) == true);
-	assert([0, 1, 2].hasElement(4) == false);
-}
-
-/// Returns: true if array contains all elements provided in an array, else, false
+/// Returns: true if array contains all elements provided in an array
 bool hasElement(T)(T[] array, T[] elements) pure {
 	// go through the list and match as many elements as possible
 	foreach (val; elements){
@@ -394,13 +309,13 @@ unittest{
 }
 
 /// Checks if all elements present in an array are also present in another array
-/// 
+///
 /// Index, and the number of times the element is present in each array doesn't matter
-/// 
-/// 
+///
+///
 /// Arguments:
-/// `toMatch` is the array to perform the check on  
-/// `elements` is the array containing the elements that will be compared against  
+/// `toMatch` is the array to perform the check on
+/// `elements` is the array containing the elements that will be compared against
 ///
 /// Returns: true if all elements present in `toMatch` are also present in `elements`
 bool matchElements(T)(T[] toMatch, T[] elements) pure {
@@ -430,17 +345,17 @@ unittest{
 	assert([0, 1, 2].indexOf(4) == -1);
 }
 
-/// Returns index of closing/openinig bracket of the provided bracket  
-/// 
+/// Returns index of closing/openinig bracket of the provided bracket
+///
 /// `T` is data type of each element (usually char in case of searching in strings)
 /// `forward` if true, then the search is in forward direction, i.e, the closing bracket is searched for
 /// `opening` is the array of elements that are to be considered as opening brackets
 /// `closing` is the array of elements that are to be considered as closing brackets. Must be in same order as `opening`
 /// `s` is the array to search in
 /// `index` is the index of the opposite bracket
-/// 
+///
 /// Returns: index of closing/opening bracket
-/// 
+///
 /// Throws: Exception if the bracket is not found
 size_t bracketPos(T, bool forward=true)
 		(T[] s, size_t index, T[] opening=['[','{','('], T[] closing=[']','}',')'])
@@ -473,7 +388,7 @@ unittest{
 
 /*
 /// divides an array into number of arrays while (trying to) keeping their length same
-/// 
+///
 /// In case it's not possible to keep length same, the left-over elements from array will be added to the last array
 ///
 /// Returns: the divided arrays
@@ -508,7 +423,7 @@ unittest{
 }*/
 
 /// Divides an array into smaller arrays, where smaller arrays have a max size
-/// 
+///
 /// Returns: array of the smaller arrays
 T[][] divideArray(T)(T[] array, size_t maxLength) pure {
 	if (maxLength == 0)
@@ -601,11 +516,11 @@ unittest{
 }
 
 /// generates a markdown table for some data.
-/// 
+///
 /// Arguments:
-/// `headings` is the headings for each column. Left-to-Right  
-/// `data` contains each row's data. All rows must be same length  
-/// 
+/// `headings` is the headings for each column. Left-to-Right
+/// `data` contains each row's data. All rows must be same length
+///
 /// Returns: the markdown, for the table, with each line of markdown as a separate element in the string[]
 string[] makeTable(T)(string[] headings, T[][] data){
 	assert(headings.length > 0, "cannot make table with no headings");
