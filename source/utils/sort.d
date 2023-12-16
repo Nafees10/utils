@@ -6,6 +6,7 @@ import std.traits;
 debug import std.conv : to;
 
 /// Sort an input array, where only [0 .. count] elements are required
+/// **THIS WILL MODIFY `input` ARRAY**
 ///
 /// Returns: sorted [0 .. count] elements
 T[] partialSort(alias val = "a", T)(T[] input, ulong count){
@@ -30,7 +31,7 @@ T[] partialSort(alias val = "a", T)(T[] input, ulong count){
 		selection = merge!val(selection, radixSort!val(temp[0 .. i]), count);
 	return selection;
 }
-/// 
+///
 unittest{
 	uint[] input = [7, 0, 5, 4, 6, 8, 9];
 	assert(partialSort(input, 1) == [0]);
@@ -39,10 +40,14 @@ unittest{
 	assert(partialSort(input, 4) == [0, 4, 5, 6]);
 }
 
-/// Radix sort. ascending order
-T[] radixSort(alias val = "a", T)(T[] input){
+/// Radix sort. ascending order.
+/// The input array is sorted after by this, and the ptr can be modified too
+/// the sorted array is returned as well
+///
+/// Returns: sorted array
+T[] radixSort(alias val = "a", T)(ref T[] input){
 	alias valGet = unaryFun!val;
-	static immutable ubyte end = T.sizeof * 8;
+	enum ubyte end = typeof(valGet(input[0])).sizeof * 8;
 	size_t[256] counts;
 	T[] output = new T[input.length];
 	for (ubyte i = 0; i < end; i += 8){
@@ -57,7 +62,7 @@ T[] radixSort(alias val = "a", T)(T[] input){
 	}
 	return input;
 }
-/// 
+///
 unittest{
 	uint[] input = [7, 0, 5, 4, 6, 8, 9];
 	assert(radixSort(input) == [0, 4, 5, 6, 7, 8, 9]);
@@ -79,7 +84,7 @@ T[] mergeSort(alias val = "a", T)(T[] arr, ulong maxLen = 0){
 					mergeSort!val(arr[mid .. $], maxLen),
 					maxLen);
 }
-/// 
+///
 unittest{
 	uint[] input = [7, 0, 5, 4, 6, 8, 9];
 	assert(mergeSort(input) == [0, 4, 5, 6, 7, 8, 9]);
@@ -104,7 +109,7 @@ unittest{
 }
 
 /// Merge 2 sorted arrays.
-/// 
+///
 /// if maxLen is non zero, only first maxLen number of elements are returned.
 /// using maxLen should give slight performance benefit
 T[] merge(alias val = "a", T)(T[] A, T[] B, size_t maxLen = 0){
