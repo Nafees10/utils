@@ -64,7 +64,10 @@ T[] radixSort(alias val = "a", T)(T[] input){
 	if (end % 2){
 		foreach (i, val; input)
 			output[i] = val;
+		.destroy(input);
+		return output;
 	}
+	.destroy(output);
 	return input;
 }
 ///
