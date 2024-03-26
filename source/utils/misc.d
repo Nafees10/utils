@@ -17,16 +17,20 @@ import std.functional;
 import utils.ds;
 public import utils.ds : ByteUnion;
 
+/// Benchmark results from `utils.misc.bench`
 struct Times{
 	ulong min = ulong.max;
 	ulong max = 0;
 	ulong total = 0;
 	ulong avg = 0;
 	string toString() const @safe pure{
-		return format!"min\tmax\tavg\ttotal\t/msecs\n%d\t%d\t%d\t%d"(min, max, avg, total);
+		return format!"min\tmax\tavg\ttotal\t/msecs\n%d\t%d\t%d\t%d"(
+				min, max, avg, total);
 	}
 }
 
+/// call `func` for `runs` number of times
+/// Returns: benchmark results
 Times bench(void delegate(ref StopWatch sw) func, ulong runs = 100_000){
 	Times time;
 	StopWatch sw = StopWatch(AutoStart.no);
@@ -41,6 +45,8 @@ Times bench(void delegate(ref StopWatch sw) func, ulong runs = 100_000){
 	return time;
 }
 
+/// call `func` for `runs` number of times
+/// Returns: benchmark results
 Times bench(void delegate() func, ulong runs = 100_000){
 	Times time;
 	StopWatch sw = StopWatch(AutoStart.no);
@@ -59,7 +65,7 @@ Times bench(void delegate() func, ulong runs = 100_000){
 
 /// mangles an unsigned integer, using a key.
 /// is reversible. calling this on a mangled integer will un-mangle it
-size_t mangle(size_t val, size_t key) pure {
+deprecated size_t mangle(size_t val, size_t key) pure {
 	static const bits = size_t.sizeof * 8;
 	size_t ret = ~key & val;
 	for (ubyte i = 0; i < bits; i ++){
@@ -80,6 +86,7 @@ size_t mangle(size_t val, size_t key) pure {
 	}
 	return ret;
 }
+
 ///
 unittest{
 	import std.random : uniform;
@@ -92,7 +99,7 @@ unittest{
 
 /// mangles using a key available at compile time.
 /// is reversible, calling mangled integer with same key will return un-mangled integer
-size_t mangle(size_t key)(size_t val) pure {
+deprecated size_t mangle(size_t key)(size_t val) pure {
 	static size_t rmOdd(size_t key) pure{
 		size_t ret;
 		for (ubyte i = 0; i < size_t.sizeof * 8; i ++){
@@ -108,6 +115,7 @@ size_t mangle(size_t key)(size_t val) pure {
 		}
 		return ret;
 	}
+
 	static ushort[size_t.sizeof * 4] swapPos(size_t key) pure{
 		ushort[size_t.sizeof * 4] ret;
 		ubyte count;
@@ -124,6 +132,7 @@ size_t mangle(size_t key)(size_t val) pure {
 		}
 		return ret;
 	}
+
 	static const actualKey = rmOdd(key);
 	static const ushort[size_t.sizeof * 4] swaps = swapPos(actualKey);
 	size_t ret = ~actualKey & val;
@@ -135,6 +144,7 @@ size_t mangle(size_t key)(size_t val) pure {
 	}
 	return ret;
 }
+
 ///
 unittest{
 	import std.random : uniform;
@@ -146,7 +156,7 @@ unittest{
 
 /// Generates combinations for enum with bitflag members
 /// T, the enum, must have base type as ulong
-ulong[] combinations(T)(ulong alwaysIncluded = 0, ulong alwaysExcluded = 0)
+deprecated ulong[] combinations(T)(ulong alwaysIncluded = 0, ulong alwaysExcluded = 0)
 		pure if (is(T == enum) && is(OriginalType!(Unqual!T) == ulong)){
 	ulong[] ret;
 	immutable ulong ignore = alwaysIncluded & ~alwaysExcluded;
@@ -166,6 +176,7 @@ ulong[] combinations(T)(ulong alwaysIncluded = 0, ulong alwaysExcluded = 0)
 	}while (val != ignore);
 	return ret;
 }
+
 ///
 unittest{
 	enum Vals : ulong{
@@ -182,7 +193,7 @@ unittest{
 
 /// Converts bitflags to comma separated readable string for enums
 /// T is an enum, with ulong base type
-string bitmaskToString(T, char ENCLOSE=0)(ulong flags) pure
+deprecated string bitmaskToString(T, char ENCLOSE=0)(ulong flags) pure
 		if (is(T == enum) && is(OriginalType!(Unqual!T) == ulong)){
 	string str;
 	foreach (i; EnumMembers!T){
@@ -197,6 +208,7 @@ string bitmaskToString(T, char ENCLOSE=0)(ulong flags) pure
 		return str[0 .. $ - 1];
 	return str;
 }
+
 ///
 unittest{
 	enum Vals : ulong{
@@ -218,7 +230,7 @@ unittest{
 /// Returns: the lines read from file in array of string
 ///
 /// Throws: Exception on failure
-string[] fileToArray(string fname){
+deprecated string[] fileToArray(string fname){
 	File f = File(fname, "r");
 	string[] r;
 	while (!f.eof())
@@ -232,7 +244,7 @@ string[] fileToArray(string fname){
 /// If a file already exists, it will be overwritten, and `\n` is added at end of each string
 ///
 /// Throws: exception on failure
-void arrayToFile(string[] array, string fname, string toApp = "\n"){
+deprecated void arrayToFile(string[] array, string fname, string toApp = "\n"){
 	File f = File(fname,"w");
 	foreach (val; array)
 		f.write(val, toApp);
@@ -260,6 +272,7 @@ size_t readHexadecimal(string str){
 		r |= DIGITS.indexOf(c) << 4 * (lastInd - i);
 	return r;
 }
+
 ///
 unittest{
 	assert("FF".readHexadecimal == 0xFF);
@@ -286,13 +299,14 @@ size_t readBinary(string str) pure {
 		r |= (c == '1') << (lastInd - i);
 	return r;
 }
+
 ///
 unittest{
 	assert("01010101".readBinary == 0B01010101);
 }
 
 /// Returns: true if array contains all elements provided in an array
-bool hasElement(T)(T[] array, T[] elements) pure {
+deprecated bool hasElement(T)(T[] array, T[] elements) pure {
 	// go through the list and match as many elements as possible
 	foreach (val; elements){
 		if (array.indexOf(val) == -1)
@@ -300,6 +314,7 @@ bool hasElement(T)(T[] array, T[] elements) pure {
 	}
 	return true;
 }
+
 ///
 unittest{
 	assert([0, 1, 2].hasElement([2, 0, 1]) == true);
@@ -318,13 +333,14 @@ unittest{
 /// `elements` is the array containing the elements that will be compared against
 ///
 /// Returns: true if all elements present in `toMatch` are also present in `elements`
-bool matchElements(T)(T[] toMatch, T[] elements) pure {
+deprecated bool matchElements(T)(T[] toMatch, T[] elements) pure {
 	foreach(currentToMatch; toMatch){
 		if (!elements.canFind(currentToMatch))
 			return false;
 	}
 	return true;
 }
+
 ///
 unittest{
 	assert("Hello".matchElements("aeloH") == true);
@@ -332,13 +348,14 @@ unittest{
 }
 
 /// Returns: the index of an element in an array, negative one if not found
-ptrdiff_t indexOf(T)(T[] array, T element) pure {
+deprecated ptrdiff_t indexOf(T)(T[] array, T element) pure {
 	foreach (i, val; array){
 		if (val == element)
 			return i;
 	}
 	return -1;
 }
+
 ///
 unittest{
 	assert([0, 1, 2].indexOf(1) == 1);
@@ -357,7 +374,7 @@ unittest{
 /// Returns: index of closing/opening bracket
 ///
 /// Throws: Exception if the bracket is not found
-size_t bracketPos(T, bool forward=true)
+deprecated size_t bracketPos(T, bool forward=true)
 		(T[] s, size_t index, T[] opening=['[','{','('], T[] closing=[']','}',')'])
 		{
 	Stack!T brackets = new Stack!T;
@@ -380,6 +397,7 @@ size_t bracketPos(T, bool forward=true)
 	.destroy (brackets);
 	return i;
 }
+
 ///
 unittest{
 	assert ((cast(char[])"hello(asdf[asdf])").bracketPos(5) == 16);
@@ -425,7 +443,7 @@ unittest{
 /// Divides an array into smaller arrays, where smaller arrays have a max size
 ///
 /// Returns: array of the smaller arrays
-T[][] divideArray(T)(T[] array, size_t maxLength) pure {
+deprecated T[][] divideArray(T)(T[] array, size_t maxLength) pure {
 	if (maxLength == 0)
 		throw new Exception("maxLength must be greater than 0");
 	T[][] r;
@@ -440,6 +458,7 @@ T[][] divideArray(T)(T[] array, size_t maxLength) pure {
 	}
 	return r;
 }
+
 ///
 unittest{
 	assert([0,1,2,3].divideArray(1) == [[0],[1],[2],[3]]);
@@ -466,6 +485,7 @@ bool isNum(string s, bool allowDecimalPoint=true) pure {
 	}
 	return true;
 }
+
 ///
 unittest{
 	assert("32".isNum == true);
@@ -484,6 +504,7 @@ unittest{
 }
 
 /// Returns: a string with all uppercase alphabets converted into lowercase
+/// TODO: deprecate it?
 string lowercase(string s) pure {
 	static immutable ubyte diff = 'a' - 'A';
 	char[] r = (cast(char[])s).dup;
@@ -493,6 +514,7 @@ string lowercase(string s) pure {
 	}
 	return cast(string)r;
 }
+
 ///
 unittest{
 	assert("ABcD".lowercase == "abcd");
@@ -500,6 +522,7 @@ unittest{
 }
 
 /// Returns: true if all characters in a string are alphabets, uppercase, lowercase, or both
+/// TODO: deprecate it?
 bool isAlphabet(string s) pure {
 	foreach (c; s){
 		if ((c < 'a' || c > 'z') && (c < 'A' || c > 'Z')){
@@ -508,63 +531,10 @@ bool isAlphabet(string s) pure {
 	}
 	return true;
 }
+
 ///
 unittest{
 	assert("aBcDEf".isAlphabet == true);
 	assert("ABCd_".isAlphabet == false);
 	assert("ABC12".isAlphabet == false);
-}
-
-/// generates a markdown table for some data.
-///
-/// Arguments:
-/// `headings` is the headings for each column. Left-to-Right
-/// `data` contains each row's data. All rows must be same length
-///
-/// Returns: the markdown, for the table, with each line of markdown as a separate element in the string[]
-string[] makeTable(T)(string[] headings, T[][] data){
-	assert(headings.length > 0, "cannot make table with no headings");
-	assert(data.length > 0, "cannot make table with no data");
-	assert(headings.length == data[0].length, "headings.length does not equal data.length");
-	import utils.lists;
-	// stores the data in string
-	string[][] sData;
-	// convert it all to string
-	static if (is (T == string)){
-		sData = data;
-	}else{
-		sData.length = data.length;
-		foreach (rowNum, row; data){
-			sData[rowNum].length = row.length;
-			foreach (cellNum, cell; row){
-				sData[rowNum][cellNum] = to!string(cell);
-			}
-		}
-	}
-	// now make the table
-	LinkedList!string table = new LinkedList!string;
-	// add headings
-	{
-		string line;
-		string alignment;
-		line = headings[0];
-		alignment = "---";
-		for (size_t i = 1; i < headings.length; i ++){
-			line ~= " | "~headings[i];
-			alignment ~= " | ---";
-		}
-		table.append([line, alignment]);
-	}
-	// now begin with the data
-	foreach (row; sData){
-		string line/* = row[0]*/;
-		foreach (cell; row){
-			line ~= cell~" | ";
-		}
-		line.length -= 3;
-		table.append (line);
-	}
-	string[] r = table.toArray;
-	.destroy(table);
-	return r;
 }
