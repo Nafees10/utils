@@ -26,7 +26,19 @@ union ByteUnion(T){
 	}
 }
 
-/// Set of type `T`
+/++
+Set of type `T`
+
+Uses an associative array with element type `void[0]` under the hood
+(`Set.set`)
+
+Following operator overloads are present:
+
+* `a + b` - Set union
+* `a - b` - Set difference
+* `a += b` - Add all keys of b to a
+* `a -= b` - Remove all keys from a, that exist in both a and b
++/
 struct Set(T){
 	/// The assoc_array being used as Set
 	void[0][T] set;
