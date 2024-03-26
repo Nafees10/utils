@@ -45,20 +45,25 @@ unittest{
 /// the sorted array is returned as well
 ///
 /// Returns: sorted array
-T[] radixSort(alias val = "a", T)(ref T[] input){
+T[] radixSort(alias val = "a", T)(T[] input){
 	alias valGet = unaryFun!val;
-	enum ubyte end = typeof(valGet(input[0])).sizeof * 8;
+	enum ubyte end = typeof(valGet(input[0])).sizeof;
 	size_t[256] counts;
 	T[] output = new T[input.length];
-	for (ubyte i = 0; i < end; i += 8){
+	foreach (ubyte i; 0 .. end){
+		i *= 8;
 		counts[] = 0;
 		foreach (val; input)
-			++ counts[(valGet(val) >> i) & 255];
+			++ counts[(valGet(val) >> i) & 0xFF];
 		foreach (j; 1 .. counts.length)
 			counts[j] += counts[j - 1];
 		foreach_reverse (val; input)
-			output[-- counts[(valGet(val) >> i) & 255]] = val;
+			output[-- counts[(valGet(val) >> i) & 0xFF]] = val;
 		swap(input, output);
+	}
+	if (end % 2){
+		foreach (i, val; input)
+			output[i] = val;
 	}
 	return input;
 }
@@ -66,6 +71,11 @@ T[] radixSort(alias val = "a", T)(ref T[] input){
 unittest{
 	uint[] input = [7, 0, 5, 4, 6, 8, 9];
 	assert(radixSort(input) == [0, 4, 5, 6, 7, 8, 9]);
+	assert(input == [0, 4, 5, 6, 7, 8, 9]);
+
+	ubyte[] b = [7, 0, 5, 4, 6, 8, 9];
+	assert(radixSort(b) == [0, 4, 5, 6, 7, 8, 9]);
+	assert(b == [0, 4, 5, 6, 7, 8, 9]);
 }
 
 /// merge sort
@@ -93,7 +103,8 @@ unittest{
 /// Merge 2 sorted arrays of same length, into a third array, of same length.
 /// i.e, half the elements are discarded.
 T[] mergeEq(alias val = "a", T)(T[] A, T[] B){
-	assert(A.length == B.length, "mergeEq called on arrays of not equal lengths");
+	assert(A.length == B.length,
+			"mergeEq called on arrays of not equal lengths");
 	alias valGet = unaryFun!val;
 	T[] R;
 	R.length = A.length;
@@ -115,7 +126,8 @@ unittest{
 T[] merge(alias val = "a", T)(T[] A, T[] B, size_t maxLen = 0){
 	alias valGet = unaryFun!val;
 	T[] R;
-	R.length = maxLen && maxLen < A.length + B.length ? maxLen : A.length + B.length;
+	R.length = maxLen && maxLen < A.length + B.length
+		? maxLen : A.length + B.length;
 
 	size_t a, b, i;
 	if (A.length && B.length){
@@ -131,9 +143,11 @@ T[] merge(alias val = "a", T)(T[] A, T[] B, size_t maxLen = 0){
 			}
 		}
 	}
+
 	if (a < A.length){
 		R[i .. $] = A[a .. a + R.length - i];
-	}else if (b < B.length){
+	}
+	else if (b < B.length){
 		R[i .. $] = B[b .. b + R.length - i];
 	}
 	return R;
