@@ -156,21 +156,18 @@ private:
 	ubyte[(EnumMembers!T.length  + 7) / 8] _flags;
 
 	/// index in _flags for a enum member
-	template _index(T val){
-		enum ptrdiff_t _index = [EnumMembers!T].indexOf(val) >= 0 ?
-			[EnumMembers!T].indexOf(val) / 8 : -1;
-	}
+	enum _index(T val) =
+		[EnumMembers!T].indexOf(val) >= 0
+		? [EnumMembers!T].indexOf(val) / 8 : -1;
 
 	/// shift value for enum member
-	template _shift(T val){
-		enum ubyte _shift = [EnumMembers!T].indexOf(val) - (_index!val * 8);
-	}
+	enum _shift(T val) = [EnumMembers!T].indexOf(val) - (_index!val * 8);
 
 	/// Error message for when a value is not enum member
-	template _notMemberError(T val){
-		enum string _notMemberError = val.to!string ~
-			" is not a member of enum " ~ T.stringof;
-	}
+	enum _notMemberError(T val) = val.to!string ~
+		" is not a member of enum " ~ T.stringof;
+
+	enum _isValidType(V) = is(V == T);
 
 	/// Returns: [index, shift]. index can be -1 to indicate not existing
 	size_t[2] _getIndexShift(T val) const {
@@ -179,10 +176,6 @@ private:
 			return [-1, -1];
 		immutable size_t acInd = index / 8;
 		return [acInd, index - (acInd * 8)];
-	}
-
-	template _IsValidType(V){
-		enum bool _IsValidType = is(V == T);
 	}
 
 	/// private constructor
@@ -194,7 +187,7 @@ private:
 	}
 
 public:
-	this(V...)(V initial) if (allSatisfy!(_IsValidType, V)){
+	this(V...)(V initial) if (allSatisfy!(_isValidType, V)){
 		foreach (val; initial)
 			set(val);
 	}
