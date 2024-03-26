@@ -1181,6 +1181,7 @@ private:
 	size_t _seek;
 	bool _grow;
 	size_t _maxSize;
+
 public:
 	/// constructor
 	///
@@ -1190,6 +1191,7 @@ public:
 		_grow = grow;
 		_maxSize = maxSize;
 	}
+
 	~this(){
 		.destroy(_stream);
 	}
@@ -1306,11 +1308,13 @@ public:
 		r.array[0 .. len] = _stream[at .. at + len];
 		return r.data;
 	}
+
 	/// ditto
 	T readAt(T)(size_t at){
 		bool dummyBool;
 		return readAt!T(at, dummyBool);
 	}
+
 	/// Reads a data type T from current seek. **Do not use this for reading arrays**
 	///
 	/// Will return invalid data if there are insufficient bytes to read from.
@@ -1330,11 +1334,13 @@ public:
 			_seek += n - T.sizeof;
 		return u.data;
 	}
+
 	/// ditto
 	T read(T)(ubyte n=0){
 		bool dummyBool;
 		return read!T(dummyBool, n);
 	}
+
 	/// Reads an array.
 	///
 	/// in case of insufficient bytes in stream, will return array of correct length but missing bytes at end.
@@ -1349,11 +1355,13 @@ public:
 		readCount = readRaw((cast(ubyte*)r.ptr)[0 .. r.length * T.sizeof]) / T.sizeof;
 		return r;
 	}
+
 	/// ditto
 	T[] readArray(T)(ubyte n=0){
 		size_t dummyUint;
 		return readArray!T(dummyUint, n);
 	}
+
 	/// Writes data at seek. **Do not use this for arrays**
 	///
 	/// `n` is number of bytes to actually write, default (0) is `T.sizeof`
@@ -1384,6 +1392,7 @@ public:
 		_seek += n;
 		return true;
 	}
+
 	/// Writes an array without its size.
 	///
 	/// Returns: number of bytes written, **not the number of elements**
@@ -1400,6 +1409,7 @@ public:
 		_seek += len;
 		return len;
 	}
+
 	/// Writes (overwriting existing) data `at` a seek, without changing seek.
 	///
 	/// `n` is number of bytes to actually write. default (0) is T.sizeof
@@ -1414,6 +1424,7 @@ public:
 		_seek = prevSeek;
 		return r;
 	}
+
 	/// Writes an array at seek.
 	///
 	/// `n` is the number of bytes to use for storing length of array, default (`0`) is `size_t.sizeof`
@@ -1432,6 +1443,7 @@ public:
 		return false; // something bad went wrong, while writing size
 	}
 }
+
 ///
 unittest{
 	ByteStream stream = new ByteStream();
@@ -1467,22 +1479,26 @@ unittest{
 }
 
 /// used by Tree class to hold individual nodes in the tree
-struct TreeNode(T){
+deprecated struct TreeNode(T){
 	T data; /// the data stored
 	TreeNode!(T)* parentPtr; /// pointer to the parent node, if this is null, this is the root of the tree
 	TreeNode!(T)*[] childNodes; /// stores child nodes
+
 	/// constructor
 	this(T dataToStore){
 		data = dataToStore;
 	}
+
 	/// constructor
 	this(TreeNode!(T)* parent){
 		parentPtr = parent;
 	}
+
 	/// constructor
 	this(TreeNode!(T)*[] children){
 		childNodes = children.dup;
 	}
+
 	/// constructor
 	this(T dataToStore, TreeNode!(T)*[] children, TreeNode!(T)* parent){
 		data = dataToStore;
@@ -1490,13 +1506,15 @@ struct TreeNode(T){
 		parentPtr = parent;
 	}
 }
+
 /// To make reading a Tree (made up of TreeNode) a bit easier
 ///
 /// and while using it, make sure you do not make a loop in TreeNodes by putting a parent or parent's parent in a node's childNodes,
 /// doing so will cause an infinite loop, TreeReader cannot currently handle this
-struct TreeReader(T){
+deprecated struct TreeReader(T){
 	/// the root node
 	TreeNode!(T)* root;
+
 	/// .destroy()s children of the root, including children of children and so on, the root is also .destroy-ed
 	void clear(){
 		/// called by iterate to destroy a node
@@ -1507,6 +1525,7 @@ struct TreeReader(T){
 		// start killing every node
 		this.iterate(&destroyNode);
 	}
+
 	/// counts and returns number of nodes in the tree
 	///
 	/// Returns: the number of nodes in the tree, counting all child-nodes and their child-nodes and so on
@@ -1522,6 +1541,7 @@ struct TreeReader(T){
 		iterate(&increaseCount);
 		return r;
 	}
+
 	/// counts and returns number of nodes in the tree
 	///
 	/// if `doCount` is not null, only nodes for which `doCount` function returns true will be counted
@@ -1541,6 +1561,7 @@ struct TreeReader(T){
 		iterate(&increaseCount);
 		return r;
 	}
+
 	/// calls a function on every node
 	///
 	/// loop is terminated as soon as false is returned from function
@@ -1565,6 +1586,7 @@ struct TreeReader(T){
 		}
 		.destroy(nodes);
 	}
+
 	/// calls a delegate on every node
 	///
 	/// loop is terminated as soon as false is returned from function
@@ -1590,6 +1612,7 @@ struct TreeReader(T){
 		.destroy(nodes);
 	}
 }
+
 ///
 unittest{
 	TreeReader!int tree;
