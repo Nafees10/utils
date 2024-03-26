@@ -9,7 +9,7 @@ import std.file,
 			 std.conv,
 			 std.stdio,
 			 std.traits,
-			 std.bitmanip,
+			 std.functional,
 			 std.algorithm;
 
 /// Used to read some data type as `ubyte[x]`
@@ -429,6 +429,7 @@ public:
 		return false;
 	}
 }
+
 ///
 unittest{
 	enum EventType{
@@ -575,6 +576,101 @@ unittest{
 	assert(eventSub[EventType.Update] == true);
 	eventSub[EventType.Update] &= false;
 	assert(eventSub[EventType.Update] == false);
+}
+
+/// A heap of type `T`
+class Heap(T, alias cmp="a < b"){
+private:
+	alias compare = binaryFun!cmp;
+public:
+	this(){}
+
+	/// heap array
+	T[] heap;
+
+	/// Returns: index of parent
+	static size_t parent(size_t i) pure {
+		return (i - 1) / 2;
+	}
+
+	/// Returns: index of left child
+	static size_t left(size_t i) pure {
+		return (2 * i) + 1;
+	}
+
+	/// Returns: index of right child
+	static size_t right(size_t i) pure {
+		return (2 * i) + 2;
+	}
+
+	/// Returns: true if the heap is empty
+	bool empty() pure const {
+		return heap.length == 0;
+	}
+
+	/// insert in the heap
+	void put(T val) pure {
+		size_t i = heap.length;
+		heap ~= val;
+		while (i > 0 && compare(heap[i], heap[parent(i)])){
+			T temp = heap[parent(i)];
+			heap[parent(i)] = heap[i];
+			heap[i] = temp;
+			i = parent(i);
+		}
+	}
+
+	/// Throws: Exception if heap is empty
+	/// Returns: top element
+	T front() pure {
+		if (heap.length == 0)
+			throw new Exception("Heap is empty, cannot seek");
+		return heap[0];
+	}
+
+	/// Removes top element
+	/// Throws: Exception if heap is empty
+	/// Returns: top element
+	T popFront() pure {
+		if (heap.length == 0)
+			throw new Exception("Heap is empty, cannot pop");
+		T ret = heap[0];
+		heap[0] = heap[$ - 1];
+		heap.length --;
+		heapify(0);
+		return ret;
+	}
+
+	/// heapify at an index
+	/// Returns: this
+	typeof(this) heapify(size_t i) pure {
+		while (i < heap.length){
+			size_t right = right(i),
+						 left = left(i),
+						 select = i;
+			if (right < heap.length && compare(heap[right], heap[select]))
+				select = right;
+			if (left < heap.length && compare(heap[left], heap[select]))
+				select = left;
+			if (select == i)
+				break;
+			T temp = heap[select];
+			heap[select] = heap[i];
+			heap[i] = temp;
+			i = select;
+		}
+		return this;
+	}
+}
+
+///
+unittest{
+	int[] items = [5, 6, 4, 7, 3, 8, 2, 9, 1, 0];
+	Heap!int h = new Heap!int;
+	foreach (i; items)
+		h.put(i);
+	import std.array;
+	assert(h.array == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
 }
 
 /// A linked list based stack with push, and pop
