@@ -26,6 +26,85 @@ union ByteUnion(T){
 	}
 }
 
+/// Set of type `T`
+struct Set(T){
+	/// The assoc_array being used as Set
+	void[0][T] set;
+	alias set this;
+
+	this(T[] vals){
+		put(vals);
+	}
+
+	/// Add to set
+	void put(T val) pure {
+		set[val] = (void[0]).init;
+	}
+	/// ditto
+	void put(T[] vals) pure {
+		foreach (val; vals)
+			put(val);
+	}
+
+	/// Returns: whether `val` exists in Set
+	bool exists(T val) pure const {
+		return (val in set) !is null;
+	}
+
+	/// Returns: whether this contains all the elements as `rhs`, and vice versa
+	bool opEquals(const Set!T rhs) pure const {
+		if (rhs.set.keys.length != set.keys.length)
+			return false;
+		foreach (key; set.keys){
+			if (!rhs.exists(key))
+				return false;
+		}
+		return true;
+	}
+
+	/// Returns: new Set, with set union
+	Set!T opBinary(string op : "+")(const Set!T rhs) pure const {
+		Set!T ret;
+		ret.put(keys);
+		ret.put(rhs.keys);
+		return ret;
+	}
+
+	/// Returns: new Set, with set differnce
+	Set!T opBinary(string op : "-")(const Set!T rhs) pure const {
+		Set!T ret;
+		foreach (key; set.keys.filter!(k => !rhs.exists(k)))
+			ret.put(key);
+		return ret;
+	}
+
+	ref Set!T opOpAssign(string op : "+")(const Set!T rhs) pure {
+		foreach (key; rhs.keys)
+			put(key);
+		return this;
+	}
+
+	ref Set!T opOpAssign(string op : "-")(const Set!T rhs) pure {
+		foreach (key; rhs.keys)
+			remove(key);
+		return this;
+	}
+}
+///
+unittest{
+	Set!int set;
+	foreach (i; 0 .. 5)
+		set.put(i);
+	foreach (i; 0 .. 5)
+		assert(set.exists(i));
+	assert(!set.exists(-1));
+	assert(!set.exists(5));
+
+	Set!int second = Set!int([1, 2, 3]);
+	assert(set - second == Set!int([0, 4]));
+	assert (second - set == Set!int());
+}
+
 /++
 Stores bit flags against each enum member, and provides overloaded bitwise
 operators
