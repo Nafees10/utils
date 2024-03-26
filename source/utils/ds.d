@@ -593,27 +593,34 @@ private:
 			this.prev = prev;
 		}
 	}
+
 	Item!(T)* _top;
 	size_t _count;
+
 public:
+
 	this(){
 		_top = null;
 		_count = 0;
 	}
+
 	~this(){
 		clear;
 	}
+
 	/// Appends an item to the stack
 	void push(T item){
 		Item!(T)* newItem = new Item!T(item, _top);
 		_top = newItem;
 		_count ++;
 	}
+
 	/// Appends an array of items to the stack
 	void push(T[] items){
 		foreach (item; items)
 			push(item);
 	}
+
 	/// peeks an item on stack
 	///
 	/// Returns: item peeked
@@ -624,6 +631,7 @@ public:
 			throw new Exception("Cannot peek from empty stack");
 		return _top.data;
 	}
+
 	/// pops an item from stack
 	///
 	/// Returns: the item poped
@@ -640,6 +648,7 @@ public:
 		_count --;
 		return ret;
 	}
+
 	/// Reads and removes an array of items from the stack,
 	///
 	/// Throws: Exception if there are not enough items in stack
@@ -670,6 +679,7 @@ public:
 		//decrease count
 		_count -= arr.length;
 	}
+
 	/// Empties the stack, pops all items
 	void clear(){
 		// go through all items and delete em
@@ -683,11 +693,13 @@ public:
 		_top = null;
 		_count = 0;
 	}
+
 	/// Number of items in stack
 	@property size_t count(){
 		return _count;
 	}
 }
+
 ///
 unittest{
 	Stack!ubyte stack = new Stack!ubyte;
@@ -718,12 +730,14 @@ private:
 		T data; /// the data stored
 		StackElement!(T)* next = null; /// pointer to data which was pushed after it
 	}
+
 	/// pointer to first item (first pushed, the one to pop next)
 	StackElement!(T)* firstItemPtr;
 	/// pointer to last item (last pushed)
 	StackElement!(T)* lastItemPtr;
 	/// stores number of elements pushed
 	size_t _count;
+
 public:
 	/// constructor
 	this (){
@@ -731,11 +745,13 @@ public:
 		lastItemPtr = null;
 		_count = 0;
 	}
+
 	/// destructor
 	~this (){
 		// clear the whole stack
 		clear;
 	}
+
 	/// clears the whole stack, pops all items
 	void clear(){
 		for (StackElement!(T)* i = firstItemPtr, next = null; i !is null; i = next){
@@ -744,10 +760,12 @@ public:
 		}
 		_count = 0;
 	}
+
 	/// Returns: number of items in stack
 	@property size_t count(){
 		return _count;
 	}
+
 	/// pushes an element to stack
 	void push(T element){
 		StackElement!(T)* toPush = new StackElement!(T);
@@ -762,6 +780,7 @@ public:
 		lastItemPtr = toPush;
 		_count ++;
 	}
+
 	/// pushes an array of elements to stack
 	void push(T[] elements){
 		StackElement!(T)*[] toPush;
@@ -786,6 +805,7 @@ public:
 			_count += elements.length;
 		}
 	}
+
 	/// pops an item from the stack (from bottom of stack, since it's a FIFO stack)
 	///
 	/// Returns: the element pop-ed
@@ -806,6 +826,7 @@ public:
 		}
 		return r;
 	}
+
 	/// pops a number of items from the stack (from bottom since it's a FIFO Stack)
 	///
 	/// If there aren't enoguh items in stack, all the items are poped, and the returned array's length is less than `popCount`
